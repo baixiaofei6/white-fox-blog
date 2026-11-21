@@ -1,5 +1,5 @@
-/* 粒子文字 Hero：采样/入场基数来自 mimo.mi.com 主 JS chunk 核实结果；
-   window 级指针追踪、可配置力场、自动回位、暗色发光、合帧绘制与测试钩子
+/* 粒子文字 Hero：高密度点阵文字 + 花纹装饰层；
+   window 级指针追踪、可配置力场、自动回位、昼夜中性灰配色、合帧绘制与测试钩子
    是本轮增强，不是官网原值。 */
 window.BlogParticle = { init: function (text, subtitle, opts) { return new ParticleHero(text, subtitle, opts); } };
 
@@ -7,13 +7,13 @@ function ParticleHero(text, subtitle, opts) {
   'use strict';
   var TEXT = text || '你好，我是白小飞';
   var FONT = '"LXGW WenKai TC","KaiTi","STKaiti",Georgia,serif';
-  var INK = '#1f2329', ACCENT = '#fb8147';
+  var INK = '#1f2329', ACCENT = '#1f2329';
   var CFG = Object.assign({ radius: 170, strength: 96, trail: 0.42, halo: true }, opts || {});
   var RADIUS = CFG.radius, STRENGTH = CFG.strength, TRAIL = CFG.trail;
   var IMPULSE_MS = 110, TICK_MS = 32, RETURN_LERP = 0.22, PUSH_LERP = 0.55;
 
   var SURFACE = { dark: false };
-  var PAL = { ink: INK, accent: ACCENT, glow: 'rgba(0,0,0,0)', blur: 0, size: 1.8 };
+  var PAL = { ink: INK, accent: ACCENT, glow: 'rgba(0,0,0,0)', blur: 0, size: 1.35 };
   var lastDraw = { groups: 0, rects: 0, fills: 0 };
   function surfaceIsDark() {
     var t = document.body.getAttribute('data-theme');
@@ -26,11 +26,11 @@ function ParticleHero(text, subtitle, opts) {
   function refreshPalette() {
     SURFACE.dark = surfaceIsDark();
     PAL = SURFACE.dark
-      ? { ink: '#e8f7ff', accent: '#7dd8ff', glow: 'rgba(73,177,245,.95)', blur: 12, size: 2.35 }
-      : { ink: INK, accent: ACCENT, glow: 'rgba(0,0,0,0)', blur: 0, size: 1.8 };
+      ? { ink: '#f5f5f5', accent: '#ffffff', glow: 'rgba(255,255,255,0.20)', blur: 8, size: 1.55 }
+      : { ink: INK, accent: ACCENT, glow: 'rgba(0,0,0,0)', blur: 0, size: 1.35 };
     for (var i = 0; i < parts.length; i++) {
-      parts[i].color = (i % 17 === 0 ? PAL.accent : PAL.ink);
-      parts[i].size = PAL.size;
+      parts[i].color = (i % 23 === 0 ? PAL.accent : PAL.ink);
+      parts[i].size = (parts[i].pattern ? PAL.size * 0.82 : PAL.size);
     }
   }
 
@@ -69,25 +69,42 @@ function ParticleHero(text, subtitle, opts) {
     return parts.slice(0, 120).map(function (p) { return { x: p.x, y: p.y, tx: p.tx, ty: p.ty }; });
   };
 
+  // 花纹层：文字点阵之外生成玫瑰线/花瓣形点，作为极简黑白装饰图案
+  var PATTERN = { petals: 8, rings: 4, count: 460, cx: 0.18, cy: 0.50, rx: 0.115, ry: 0.30 };
+  function patternPoints() {
+    var pts = [], n = PATTERN.count;
+    for (var i = 0; i < n; i++) {
+      var u = (i + 0.5) / n;
+      var ring = i % PATTERN.rings;
+      var theta = u * Math.PI * 2 * PATTERN.petals;
+      var rr = (0.28 + 0.72 * ring / Math.max(1, PATTERN.rings - 1)) * (0.55 + 0.45 * Math.abs(Math.cos(PATTERN.petals * theta / 2)));
+      var px = W * PATTERN.cx + Math.cos(theta) * W * PATTERN.rx * rr;
+      var py = H * PATTERN.cy + Math.sin(theta) * H * PATTERN.ry * rr;
+      if (px > 10 && px < W - 10 && py > 10 && py < H - 10) pts.push({ x: px, y: py, a: 0.35 + 0.4 * (1 - ring / PATTERN.rings), pattern: true });
+    }
+    return pts;
+  }
+
   function sample() {
     refreshPalette();
     var off = document.createElement('canvas'), o = off.getContext('2d');
-    var fs = clamp(Math.floor(W * 0.072), 52, 150);
-    o.font = '500 ' + fs + 'px ' + FONT;
+    var fs = clamp(Math.floor(W * 0.082), 58, 168);
+    o.font = '600 ' + fs + 'px ' + FONT;
     var m = o.measureText(TEXT);
-    var w = Math.ceil(m.width) + 48, h = Math.ceil(fs * 1.5) + 48;
+    var w = Math.ceil(m.width) + 40, h = Math.ceil(fs * 1.45) + 40;
     off.width = w; off.height = h;
-    o.font = '500 ' + fs + 'px ' + FONT;
+    o.font = '600 ' + fs + 'px ' + FONT;
     o.textAlign = 'center'; o.textBaseline = 'middle'; o.fillStyle = '#fff';
     o.fillText(TEXT, w / 2, h / 2);
-    var d = o.getImageData(0, 0, w, h).data, pts = [], step = 3;
+    var d = o.getImageData(0, 0, w, h).data, pts = [], step = 2;
     for (var y = 0; y < h; y += step) for (var x = 0; x < w; x += step) {
       var a = d[(y * w + x) * 4 + 3];
-      if (a > 40) pts.push({ x: x - w / 2 + W / 2, y: y - h / 2 + H * 0.42, a: a / 255 });
+      if (a > 40) pts.push({ x: x - w / 2 + W / 2 + W * 0.05, y: y - h / 2 + H * 0.40, a: a / 255 });
     }
-    var L = Math.max(900, Math.min(5200, Math.floor(W * H / 90)));
+    // dense dot field: keep more particles, cap for performance.
+    var L = Math.max(4200, Math.min(9800, Math.floor(W * H / 42)));
     var E = Math.max(1, Math.ceil(pts.length / L));
-    var sub = pts.filter(function (_, i) { return i % E === 0; });
+    var sub = pts.filter(function (_, i) { return i % E === 0; }).concat(patternPoints());
     parts = sub.map(function (p, i) {
       var n = (9301 * i + 49297) % 233280 / 233280;
       var dep = .45 + (233 * i + 97) % 1e3 / 1e3 * .9;
@@ -95,8 +112,9 @@ function ParticleHero(text, subtitle, opts) {
       var sx = p.x + Math.cos(ang) * rad + (n - .5) * 81;
       var sy = p.y + Math.sin(ang) * rad + (dep - .9) * 81;
       return {
-        x: sx, y: sy, sx: sx, sy: sy, tx: p.x, ty: p.y, size: PAL.size,
-        color: (i % 17 === 0 ? PAL.accent : PAL.ink), seed: n, depth: dep, delay: 420 * n, alpha: p.a
+        x: sx, y: sy, sx: sx, sy: sy, tx: p.x, ty: p.y, size: p.pattern ? PAL.size * 0.82 : PAL.size,
+        color: (i % 23 === 0 ? PAL.accent : PAL.ink), seed: n, depth: dep, delay: 420 * n, alpha: p.a,
+        pattern: !!p.pattern
       };
     });
     ptr.x = ptr.sx = W / 2; ptr.y = ptr.sy = H / 2;
@@ -122,8 +140,6 @@ function ParticleHero(text, subtitle, opts) {
     ensureAnim(16);
   }
 
-  // 合帧绘制：按颜色 + 4 档 alpha 分组，整组只 fill 一次；
-  // 暗色 shadowBlur 也只作用于每组一次，而不是每个粒子一次。
   function drawStatic() {
     ctx.clearRect(0, 0, W, H);
     var groups = {};
@@ -135,41 +151,36 @@ function ParticleHero(text, subtitle, opts) {
       groups[key].rects.push(p);
     }
     ctx.save();
-    if (SURFACE.dark) ctx.globalCompositeOperation = 'lighter';
     var fills = 0, groupCount = 0;
-    // 暗色双层合帧：底层放大 + shadowBlur 做辉光，顶层清晰粒子；
-    // 每层按颜色/alpha 分组只 fill 一次，不做 1136 次逐粒子滤镜。
-    if (SURFACE.dark) {
-      ctx.shadowColor = PAL.glow; ctx.shadowBlur = 18 * DPR;
-      for (var gk in groups) {
-        var gg = groups[gk];
-        ctx.globalAlpha = gg.alpha * .8; ctx.fillStyle = gg.color;
-        ctx.beginPath();
-        for (var gj = 0; gj < gg.rects.length; gj++) {
-          var gq = gg.rects[gj], gs = gq.size * 2.5;
-          ctx.rect(gq.x - gs / 2, gq.y - gs / 2, gs, gs);
-        }
-        ctx.fill(); fills++;
-      }
-      ctx.shadowBlur = 0;
-    }
     for (var k in groups) {
       var g = groups[k];
       ctx.globalAlpha = g.alpha; ctx.fillStyle = g.color;
+      if (SURFACE.dark) {
+        ctx.shadowColor = PAL.glow; ctx.shadowBlur = PAL.blur * DPR;
+      } else {
+        ctx.shadowBlur = 0;
+      }
       ctx.beginPath();
       for (var j = 0; j < g.rects.length; j++) {
-        var q = g.rects[j];
-        ctx.rect(q.x - q.size / 2, q.y - q.size / 2, q.size, q.size);
+        var q = g.rects[j], s = q.size;
+        if (q.pattern) {
+          // petal dots are drawn as tiny diamonds, keeping the whole scene monochrome
+          ctx.moveTo(q.x, q.y - s);
+          ctx.lineTo(q.x + s, q.y);
+          ctx.lineTo(q.x, q.y + s);
+          ctx.lineTo(q.x - s, q.y);
+          ctx.closePath();
+        } else {
+          ctx.rect(q.x - s / 2, q.y - s / 2, s, s);
+        }
       }
-      ctx.fill();
-      fills++; groupCount++;
+      ctx.fill(); fills++; groupCount++;
     }
     ctx.restore();
     ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     lastDraw = { groups: groupCount, rects: parts.length, fills: fills };
   }
 
-  // 一帧最多施力一次；pointermove 只更新指针，不再触发整幅重绘。
   function applyForce() {
     var hit = 0, sum = 0;
     for (var i = 0; i < parts.length; i++) {
@@ -192,7 +203,6 @@ function ParticleHero(text, subtitle, opts) {
     if (!pushing) ptr.active = false;
     ptr.sx += (ptr.x - ptr.sx) * .18; ptr.sy += (ptr.y - ptr.sy) * .18;
     ptr.vx *= TRAIL; ptr.vy *= TRAIL;
-
     if (pushing) {
       entering = false;
       applyForce();
@@ -215,19 +225,17 @@ function ParticleHero(text, subtitle, opts) {
       if (entering && allDone) entering = false;
       ptr.hit = 0;
     }
-
     drawStatic();
     if (document.getElementById('showField').checked) {
       fieldCtx.clearRect(0, 0, W, H);
       fieldCtx.beginPath(); fieldCtx.arc(ptr.sx, ptr.sy, RADIUS, 0, 2 * Math.PI);
-      fieldCtx.strokeStyle = pushing ? 'rgba(73,177,245,.75)' : 'rgba(153,153,153,.3)';
+      fieldCtx.strokeStyle = pushing ? 'rgba(31,35,41,.55)' : 'rgba(120,120,120,.25)';
       fieldCtx.lineWidth = 2; fieldCtx.stroke();
       if (CFG.halo && pushing) {
         fieldCtx.beginPath(); fieldCtx.arc(ptr.sx, ptr.sy, RADIUS * 1.35, 0, 2 * Math.PI);
-        fieldCtx.strokeStyle = 'rgba(73,177,245,.16)'; fieldCtx.lineWidth = 14; fieldCtx.stroke();
+        fieldCtx.strokeStyle = 'rgba(31,35,41,.12)'; fieldCtx.lineWidth = 14; fieldCtx.stroke();
       }
     } else fieldCtx.clearRect(0, 0, W, H);
-
     var settled = maxDisp() <= (reduced ? .4 : 1.2);
     var keepGoing = !reduced || pushing || entering || !settled;
     if (keepGoing) animTimer = setTimeout(tick, pushing ? 16 : TICK_MS);
@@ -279,11 +287,9 @@ function ParticleHero(text, subtitle, opts) {
       k++; if (k <= subText.length) typeTimer = setTimeout(type, 110);
     })();
   }
-
   (document.fonts ? document.fonts.ready : Promise.resolve()).then(function () { if (!dead) resize(); });
   function onResize() { if (dead) return; clearTimeout(rt); rt = setTimeout(resize, 180); }
   window.addEventListener('resize', onResize);
-
   this.setTheme = function () { if (dead) return; refreshPalette(); drawStatic(); ensureAnim(TICK_MS); };
   this.destroy = function () {
     dead = true;

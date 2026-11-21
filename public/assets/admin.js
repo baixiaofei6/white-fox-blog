@@ -46,7 +46,7 @@
       state.settings = s;
       ['name','hero','sub','tagline','announcement','footer','icp','about'].forEach(function (k) { set('set-' + k, s[k]); });
       var t = Object.assign({}, r.defaults && r.defaults.theme || {}, r.settings && r.settings.theme || {});
-      set('set-accent', t.accent || '#49b1f5'); set('set-orbA', t.orbA || '#cfebf3');
+      set('set-accent', t.accent || '#1f2329'); set('set-orbA', t.orbA || '#cfebf3');
       set('set-orbB', t.orbB || '#faeeff'); set('set-orbC', t.orbC || '#e8e5d8');
       ['glow','glass','grid'].forEach(function (k) { checked('set-' + k, t[k] !== false); });
       checked('set-halo', (r.defaults && r.defaults.heroFx && r.defaults.heroFx.halo) !== false);
