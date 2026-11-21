@@ -444,6 +444,15 @@
     $('register-submit').addEventListener('click', submitRegister);
     $('login-logout').addEventListener('click', logout);
     $('edit-save').addEventListener('click', savePost);
+    var zenBtn = $('edit-zen'), zenShell = $('editor-shell');
+    if (zenBtn && zenShell) zenBtn.addEventListener('click', function () {
+      var on = zenShell.classList.toggle('zen');
+      document.body.classList.toggle('zen-open', on);
+      zenBtn.textContent = on ? '退出沉浸' : '沉浸写作';
+      if (on) $('edit-body').focus();
+    });
+    var editBody = $('edit-body'), editCount = $('edit-count');
+    if (editBody && editCount) editBody.addEventListener('input', function () { editCount.textContent = editBody.value.length + ' 字'; });
     $('theme-switch').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-mode]'); if (b) setMode(b.dataset.mode);
     });

@@ -370,6 +370,15 @@ async function main() {
   assert('force field ring is drawn with visible stroke and center', r.status === 200 && r.text.includes('function drawFieldRing') && r.text.includes('setLineDash') && /fieldCtx\.arc\(ptr\.sx \|\| W \/ 2, ptr\.sy \|\| H \/ 2, RADIUS/.test(r.text) && /fieldCtx\.arc\(ptr\.sx \|\| W \/ 2, ptr\.sy \|\| H \/ 2,\s*3/.test(r.text), r.text.slice(0, 180));
   assert('heart pattern stays centered and prominent', r.status === 200 && /HEART\s*=\s*\{[^}]*cx:\s*0\.5/.test(r.text) && /scale:\s*0\.7/.test(r.text), (r.text.match(/var HEART[^;]*/)||[''])[0]);
 
+  // ---- 内容管理界面重排版（用户 m00910） ----
+  r = await adm('GET', '/admin');
+  assert('admin post panel has roomy editor structure', r.status === 200 && /id="post-body"/.test(r.text) && /editor-body-label/.test(r.text) && /id="post-zen"/.test(r.text), r.text.slice(0, 220));
+  r = await pub('GET', '/');
+  assert('public manage view has structured editor shell', r.status === 200 && /id="editor-shell"/.test(r.text) && /id="edit-zen"/.test(r.text) && /grow-label editor-body-label/.test(r.text), (r.text.match(/<section id="manage-view"[\s\S]{0,360}/)||[''])[0]);
+  r = await pub('GET', '/assets/app.css');
+  assert('editor CSS defines tall body field, zen mode and grid', r.status === 200 && /#edit-body[^{]*\{[^}]*min-height:4\d\dpx/.test(r.text) && /\.editor-shell\.zen/.test(r.text) && /\.manage-grid\{[^}]*grid-template-columns/.test(r.text), (r.text.match(/#edit-body\{[^}]*\}/)||[''])[0]);
+  assert('form labels stack above inputs for readability', r.status === 200 && /\.editor-shell label[^{]*\{[^}]*flex-direction:column/.test(r.text), (r.text.match(/\.editor-shell label\{[^}]*\}/)||[''])[0]);
+
   r = await adm('GET', '/api/does-not-exist');
   assert('unknown API 404 JSON', r.status === 404 && r.json.error === 'NOT_FOUND');
   r = await adm('POST', '/api/logout', {}, auth);

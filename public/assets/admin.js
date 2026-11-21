@@ -185,6 +185,14 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    $('post-zen').addEventListener('click', function () {
+      var shell = document.querySelector('.admin-editor-panel .editor-shell');
+      var on = shell.classList.toggle('zen');
+      document.body.classList.toggle('zen-open', on);
+      this.textContent = on ? '退出沉浸' : '沉浸写作';
+      if (on) $('post-body').focus();
+    });
+    $('post-body').addEventListener('input', function () { $('post-count').textContent = this.value.length + ' 字'; });
     $('admin-tabs').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-tab]'); if (!b) return;
       Array.prototype.forEach.call($('admin-tabs').children, function (x) { x.classList.toggle('active', x === b); });

@@ -89,15 +89,17 @@
       <div class="row mt"><button class="primary" id="layout-save" type="button">保存编排</button><span id="layout-msg" class="head-note"></span></div>
     </section>
 
-    <section class="panel glass tab-panel" data-panel="posts" hidden>
-      <h2>新建 / 更新文章（slug 相同即更新）</h2>
-      <div class="form-grid">
-        <label>标题<input id="post-title" placeholder="标题（必填）"></label><label>slug<input id="post-slug" placeholder="可留空"></label>
-        <label>日期<input id="post-date" type="date"></label><label>标签<input id="post-tags" placeholder="逗号分隔"></label>
-        <label>摘要<input id="post-excerpt"></label><label>封面 URL<input id="post-cover"></label>
-        <label class="wide">正文 HTML<textarea id="post-body" rows="5"></textarea></label>
+    <section class="panel glass tab-panel admin-editor-panel" data-panel="posts" hidden>
+      <div class="editor-toolbar"><div><h2>写文章</h2><p class="editor-hint">slug 相同即更新；正文是独立大画布，可切换沉浸写作。</p></div><button class="outline" id="post-zen" type="button">沉浸写作</button></div>
+      <div class="editor-shell">
+        <div class="editor-meta form-grid">
+          <label>标题<input id="post-title" placeholder="标题（必填）"></label><label>slug<input id="post-slug" placeholder="可留空"></label>
+          <label>日期<input id="post-date" type="date"></label><label>标签<input id="post-tags" placeholder="逗号分隔"></label>
+          <label>摘要<input id="post-excerpt"></label><label>封面 URL<input id="post-cover"></label>
+        </div>
+        <label class="wide grow-label editor-body-label">正文 HTML <span class="editor-body-tip" id="post-count">0 字</span><textarea id="post-body" rows="18" placeholder="在这里写正文，支持 HTML 标签……"></textarea></label>
+        <div class="editor-actions"><button class="primary" id="post-create" type="button">发布 / 更新文章</button></div>
       </div>
-      <button class="primary" id="post-create" type="button">发布 / 更新文章</button>
       <h2 class="mt">已有文章</h2><div id="admin-posts" class="manage-list"></div>
     </section>
 

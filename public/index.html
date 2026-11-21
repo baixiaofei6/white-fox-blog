@@ -180,11 +180,32 @@
 
   <section id="manage-view" class="reveal" hidden>
     <div class="section-head"><div><p class="eyebrow">ADMIN / 内容管理</p><h2>文章管理</h2></div><a class="more" href="#/admin/manage">管理页面</a></div>
-    <div class="panel glass">
+    <div class="panel glass manage-panel">
       <div class="manage-intro"><span id="manage-identity"></span><a class="more" id="manage-open" href="http://127.0.0.1:8788/admin" target="_blank" rel="noopener">打开独立管理页面 →</a></div>
       <div class="manage-grid">
-        <div><h3>发布新文章</h3><label>标题<input id="edit-title" maxlength="120"></label><label>别名 slug<input id="edit-slug" maxlength="120" placeholder="留空自动生成"></label><label>日期<input id="edit-date" type="date"></label><label>标签<input id="edit-tags" maxlength="160" placeholder="逗号分隔"></label><label>摘要<input id="edit-excerpt" maxlength="300"></label><label class="grow-label">正文<textarea id="edit-body" rows="8"></textarea></label><button class="primary" id="edit-save" type="button">发布 / 更新文章</button><span id="edit-message" class="head-note"></span></div>
-        <div><h3>已有文章</h3><div id="manage-posts" class="manage-posts"></div></div>
+        <div class="editor-shell" id="editor-shell">
+          <div class="editor-toolbar">
+            <div><h3>写文章</h3><p class="editor-hint">标题与元信息在上方，正文使用整块大画布。可随时切换沉浸写作。</p></div>
+            <button class="outline" id="edit-zen" type="button">沉浸写作</button>
+          </div>
+          <div class="editor-meta">
+            <label>标题<input id="edit-title" maxlength="120" placeholder="给文章起个名字"></label>
+            <div class="editor-meta-grid">
+              <label>别名 slug<input id="edit-slug" maxlength="120" placeholder="留空自动生成"></label>
+              <label>日期<input id="edit-date" type="date"></label>
+              <label>标签<input id="edit-tags" maxlength="160" placeholder="逗号分隔"></label>
+            </div>
+            <label>摘要<textarea id="edit-excerpt" rows="2" maxlength="300"></textarea></label>
+          </div>
+          <label class="grow-label editor-body-label">正文 <span class="editor-body-tip" id="edit-count">0 字</span>
+            <textarea id="edit-body" rows="18" placeholder="在这里写正文，支持 HTML 标签……"></textarea>
+          </label>
+          <div class="editor-actions"><button class="primary" id="edit-save" type="button">发布 / 更新文章</button><span id="edit-message" class="head-note"></span></div>
+        </div>
+        <aside class="editor-side">
+          <h3>已有文章</h3><p class="editor-hint">点「载入」把旧文章放进左侧编辑器，改完再发布即可更新。</p>
+          <div id="manage-posts" class="manage-posts"></div>
+        </aside>
       </div>
     </div>
   </section>
