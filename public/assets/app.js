@@ -118,13 +118,16 @@
   function renderNav() {
     var n = $('nav-user'); n.textContent = ''; n.hidden = true;
     var login = $('login-entry'), tab = $('admin-tab');
+    var reg = $('register-entry');
     if (state.user) {
       n.textContent = state.user.nickname + (state.admin ? ' · 管理员' : '');
       n.hidden = false;
       if (login) { login.textContent = '退出登录'; login.href = '#/logout'; }
+      if (reg) reg.hidden = true;
       if (tab) tab.hidden = !state.admin;
     } else {
       if (login) { login.textContent = '登录'; login.href = '#/login'; }
+      if (reg) { reg.hidden = false; reg.textContent = '注册'; reg.href = '#/register'; }
       if (tab) tab.hidden = true;
     }
     if (state.site && state.site.urls && state.site.urls.admin) {
@@ -402,7 +405,7 @@
     else if (h === '#/projects') v = 'projects-view';
     else if (h === '#/guestbook') v = 'guestbook-view';
     else if (h === '#/about') v = 'about-view';
-    ['home-view', 'notes-view', 'post-view', 'projects-view', 'about-view', 'guestbook-view', 'login-view', 'manage-view'].forEach(function (id) { if ($(id)) $(id).hidden = id !== v; });
+    ['home-view', 'notes-view', 'post-view', 'projects-view', 'about-view', 'guestbook-view', 'login-view', 'register-view', 'manage-view'].forEach(function (id) { if ($(id)) $(id).hidden = id !== v; });
     var portal = v === 'home-view';
     ['hero', 'signal-strip'].forEach(function (id) {
       var n = $(id); if (n) n.style.display = (portal && visible(id === 'hero' ? 'hero' : 'notice')) ? '' : 'none';

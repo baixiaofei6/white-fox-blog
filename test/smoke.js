@@ -360,6 +360,11 @@ async function main() {
   r = await pub('GET', '/api/guestbook');
   assert('guestbook shows who left each message', r.status === 200 && r.json.guestbook.some(g => g.nickname === '新同学' && g.text === '注册用户留言'), r.text.slice(0, 220));
 
+  // ---- register view route fix (用户 m01573) ----
+  r = await pub('GET', '/assets/app.js');
+  assert('route() switches register-view visible on #/register', r.status === 200 && r.text.indexOf('function route()') >= 0 && r.text.indexOf("'register-view'") >= 0 && r.text.indexOf('hidden = id !== v') >= 0 && /hidden\s*=\s*id\s*!==\s*v/.test(r.text) && /'register-view'/.test((r.text.match(/\['home-view'[^\]]*\]/)||[''])[0]));
+  assert('renderNav toggles register entry with login state', r.status === 200 && r.text.indexOf('function renderNav()') >= 0 && r.text.indexOf('register-entry') >= 0 && r.text.indexOf('login.href') >= 0);
+
   // ---- fetch method bug / 蝴蝶改爱心 / 力场可见（用户 m00853） ----
   r = await pub('GET', '/assets/app.js');
   assert('json() calls pass explicit method to avoid invalid fetch method', r.status === 200 && !/json\('\/api\/(login|register|logout|admin\/posts)'\s*,\s*\{/.test(r.text) && /json\('\/api\/login'\s*,\s*'POST'/.test(r.text), (r.text.match(/json\('\/api\/login'[^;]*/)||[''])[0]);
