@@ -26,7 +26,7 @@ function ParticleHero(text, subtitle, opts) {
   function refreshPalette() {
     SURFACE.dark = surfaceIsDark();
     PAL = SURFACE.dark
-      ? { ink: '#f5f5f5', accent: '#ffffff', glow: 'rgba(255,255,255,0.20)', blur: 8, size: 1.55 }
+      ? { ink: '#fafafa', accent: '#ffffff', glow: 'rgba(255,255,255,0.20)', blur: 8, size: 1.55 }
       : { ink: INK, accent: ACCENT, glow: 'rgba(0,0,0,0)', blur: 0, size: 1.35 };
     for (var i = 0; i < parts.length; i++) {
       parts[i].color = (i % 23 === 0 ? PAL.accent : PAL.ink);
@@ -69,18 +69,21 @@ function ParticleHero(text, subtitle, opts) {
     return parts.slice(0, 120).map(function (p) { return { x: p.x, y: p.y, tx: p.tx, ty: p.ty }; });
   };
 
-  // 花纹层：文字点阵之外生成玫瑰线/花瓣形点，作为极简黑白装饰图案
-  var PATTERN = { petals: 8, rings: 4, count: 460, cx: 0.18, cy: 0.50, rx: 0.115, ry: 0.30 };
+  // 心形点阵：参数方程 + 环向抖动，替换原玫瑰线花纹；保留黑白粒子配色与所有动画钩子
+  var HEART = { count: 520, cx: 0.18, cy: 0.50, scale: 0.42, rings: 5, jitter: 0.045 };
+  function heartX(t) { return 16 * Math.pow(Math.sin(t), 3); }
+  function heartY(t) { return 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t); }
   function patternPoints() {
-    var pts = [], n = PATTERN.count;
+    var pts = [], n = HEART.count;
     for (var i = 0; i < n; i++) {
       var u = (i + 0.5) / n;
-      var ring = i % PATTERN.rings;
-      var theta = u * Math.PI * 2 * PATTERN.petals;
-      var rr = (0.28 + 0.72 * ring / Math.max(1, PATTERN.rings - 1)) * (0.55 + 0.45 * Math.abs(Math.cos(PATTERN.petals * theta / 2)));
-      var px = W * PATTERN.cx + Math.cos(theta) * W * PATTERN.rx * rr;
-      var py = H * PATTERN.cy + Math.sin(theta) * H * PATTERN.ry * rr;
-      if (px > 10 && px < W - 10 && py > 10 && py < H - 10) pts.push({ x: px, y: py, a: 0.35 + 0.4 * (1 - ring / PATTERN.rings), pattern: true });
+      var t = u * Math.PI * 2;
+      var ring = i % HEART.rings;
+      var shrink = 0.42 + 0.58 * ring / Math.max(1, HEART.rings - 1);
+      var wobble = 1 + HEART.jitter * Math.sin(i * 12.9898);
+      var px = W * HEART.cx + heartX(t) * shrink * wobble * W * HEART.scale / 16;
+      var py = H * HEART.cy - heartY(t) * shrink * wobble * H * HEART.scale / 18;
+      if (px > 10 && px < W - 10 && py > 10 && py < H - 10) pts.push({ x: px, y: py, a: 0.4 + 0.45 * (1 - ring / HEART.rings), pattern: true });
     }
     return pts;
   }
@@ -164,7 +167,7 @@ function ParticleHero(text, subtitle, opts) {
       for (var j = 0; j < g.rects.length; j++) {
         var q = g.rects[j], s = q.size;
         if (q.pattern) {
-          // petal dots are drawn as tiny diamonds, keeping the whole scene monochrome
+          // heart dots stay monochrome and share the grouped draw path
           ctx.moveTo(q.x, q.y - s);
           ctx.lineTo(q.x + s, q.y);
           ctx.lineTo(q.x, q.y + s);

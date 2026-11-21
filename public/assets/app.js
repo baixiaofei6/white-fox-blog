@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var state = { site: {}, providers: {}, user: null, admin: false, posts: [], projects: [], layout: null, guestbook: [], userMode: null };
+  var state = { site: {}, providers: {}, user: null, admin: false, posts: [], projects: [], layout: null, guestbook: [], userMode: null, carouselIndex: 0, typingTimers: [] };
   var $ = function (id) { return document.getElementById(id); };
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -85,21 +85,68 @@
   }
 
   // ---- 首页内容 ----
+  function renderCarousel() {
+    var box = $('product-accordion'); if (!box || !state.projects.length) return;
+    box.textContent = '';
+    var size = Math.min(3, state.projects.length);
+    var start = (state.carouselIndex * size) % state.projects.length;
+    var shown = [];
+    for (var i = 0; i < size; i++) shown.push(state.projects[(start + i) % state.projects.length]);
+    shown.forEach(function (p, i) {
+      var item = el('div', 'product-item' + (i === 0 ? ' active' : ''));
+      var trigger = el('button', 'product-trigger');
+      trigger.type = 'button';
+      trigger.appendChild(el('span', '', p.title));
+      trigger.appendChild(el('span', 'cta-label', i === 0 ? '收起 −' : '查看详情 +'));
+      trigger.addEventListener('click', function () {
+        var wasActive = item.classList.contains('active');
+        Array.prototype.forEach.call(box.children, function (c) { c.classList.remove('active'); c.querySelector('.cta-label').textContent = '查看详情 +'; });
+        if (!wasActive) { item.classList.add('active'); trigger.querySelector('.cta-label').textContent = '收起 −'; }
+      });
+      var panel = el('div', 'product-panel');
+      panel.appendChild(el('div', 'product-panel-inner', p.desc || ''));
+      item.appendChild(trigger); item.appendChild(panel); box.appendChild(item);
+    });
+    var dots = $('page-dots'); dots.textContent = '';
+    var pages = Math.max(1, Math.ceil(state.projects.length / size));
+    for (var k = 0; k < pages; k++) {
+      var dot = el('button', k === state.carouselIndex ? 'active' : '');
+      dot.type = 'button'; dot.setAttribute('aria-label', '第 ' + (k + 1) + ' 页');
+      (function (idx) { dot.addEventListener('click', function () { state.carouselIndex = idx; renderCarousel(); }); })(k);
+      dots.appendChild(dot);
+    }
+  }
+
+  // hero-line 双行打字：第一行标题、第二行副标题，尺寸由隐藏 sizer 固定
+  function typingLine(id, text, delay) {
+    var node = $(id), sizer = $(id + '-sizer');
+    if (!node || !sizer) return;
+    sizer.textContent = text;
+    node.textContent = '';
+    var k = 0;
+    (function step() {
+      if (k > text.length) return;
+      node.textContent = text.slice(0, k);
+      k++;
+      state.typingTimers.push(setTimeout(step, k === 1 ? delay : 82));
+    })();
+  }
+
+  // ---- 首页内容 ----
   function renderHome() {
-    ['updates-grid', 'field-grid', 'project-matrix', 'stats', 'post-list', 'all-projects', 'site-links', 'about-links'].forEach(function (id) { $(id).textContent = ''; });
+    ['updates-grid', 'updates-side', 'field-grid', 'project-matrix', 'stats', 'post-list', 'all-projects', 'site-links', 'about-links'].forEach(function (id) { $(id).textContent = ''; });
     var posts = state.posts, first = posts[0];
     if (first) {
-      var f = el('a', 'featured'); f.href = href(first.slug);
-      f.appendChild(el('span', 'tag', (first.tags && first.tags[0]) || 'FEATURED'));
-      f.appendChild(el('h3', '', first.title)); f.appendChild(el('p', '', first.excerpt || ''));
-      f.appendChild(el('time', '', first.date || ''));
-      $('updates-grid').appendChild(f);
+      var f = el('a', 'card-image featured');
+      var img = el('img'); img.src = '/assets/update-featured.png'; img.alt = first.title; f.appendChild(img);
+      var info = el('div', 'card-info'); info.appendChild(el('h3', '', first.title)); info.appendChild(el('p', '', first.excerpt || '')); info.appendChild(el('time', '', first.date || ''));
+      f.appendChild(info); f.href = href(first.slug); $('updates-grid').appendChild(f);
     }
     posts.slice(1, 4).forEach(function (p, i) {
       var a = el('a', 'mini'); a.href = href(p.slug);
-      a.appendChild(el('span', 'num', '0' + (i + 1)));
-      var box = el('div'); box.appendChild(el('h3', '', p.title)); box.appendChild(el('p', '', p.excerpt || ''));
-      a.appendChild(box); $('updates-grid').appendChild(a);
+      var card = el('div', 'card-image'); var im = el('img'); im.src = '/assets/update-' + i + '.png'; im.alt = p.title; card.appendChild(im); a.appendChild(card);
+      var box = el('div', 'card-info'); box.appendChild(el('h3', '', p.title)); box.appendChild(el('p', '', p.excerpt || '')); a.appendChild(box);
+      $('updates-side').appendChild(a);
     });
     var tagCount = {};
     posts.forEach(function (p) { (p.tags || []).forEach(function (t) { tagCount[t] = (tagCount[t] || 0) + 1; }); });
@@ -121,6 +168,7 @@
       row.appendChild(box); row.appendChild(el('span', 'tag', p.tag || 'PROJECT')); $('project-matrix').appendChild(row);
     });
     $('project-note').textContent = state.projects.length + ' 个项目';
+    renderCarousel();
     [['文章', posts.length], ['项目', state.projects.length], ['标签', Object.keys(tagCount).length], ['状态', 'ONLINE']].forEach(function (kv) {
       var d = el('div', 'stat'); d.appendChild(el('b', '', kv[1])); d.appendChild(el('span', '', kv[0])); $('stats').appendChild(d);
     });
@@ -246,6 +294,8 @@
     }).then(function () { return Promise.all([api('/api/posts'), api('/api/projects')]); }).then(function (rs) {
       state.posts = rs[0].posts; state.projects = rs[1].projects;
       renderHome(); route(); renderGuestbook();
+      typingLine('line0', state.site.hero || '你好，我是白小飞', 120);
+      typingLine('line1', state.site.sub || '写代码，做东西，记录一点想法', 700);
     });
   }
 
@@ -253,6 +303,7 @@
     window.addEventListener('hashchange', route);
     $('cta1').addEventListener('click', function () { location.hash = '#/notes'; });
     $('cta2').addEventListener('click', function () { location.hash = '#/projects'; });
+    $('cta-version').addEventListener('click', function () { location.hash = '#/notes'; });
     $('theme-switch').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-mode]'); if (b) setMode(b.dataset.mode);
     });

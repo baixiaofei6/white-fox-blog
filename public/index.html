@@ -26,13 +26,28 @@
 
 <main id="app">
   <div id="hero">
-    <canvas id="pt" aria-hidden="true"></canvas>
+    <div class="hero-content">
+      <div class="hero-text">
+        <p class="hero-line"><span class="sizer" id="line0-sizer"></span><span class="typing" id="line0"></span></p>
+        <p class="hero-line"><span class="sizer" id="line1-sizer"></span><span class="typing" id="line1"></span></p>
+      </div>
+      <div class="hero-buttons">
+        <button class="hero-button primary" id="cta1" type="button">读我的文章 <span class="arrow">→</span></button>
+        <button class="hero-button outline" id="cta2" type="button">看看我做的 <span class="arrow">→</span></button>
+        <a class="hero-button ghost" href="#/about">关于这个站点 <span class="arrow">→</span></a>
+      </div>
+    </div>
+    <div class="hero-banner-wrap">
+      <div class="hero-banner" style="border-radius:24px">
+        <div class="hero-banner-shader">
+          <img class="poster" src="/assets/hero-banner.jpg" alt="">
+          <div class="particle-text-wrap"><canvas id="pt" aria-hidden="true"></canvas></div>
+        </div>
+      </div>
+      <button class="hero-version" id="cta-version" type="button">了解文章</button>
+    </div>
     <div class="hero-fallback kai" id="fallback" hidden>你好，我是白小飞</div>
     <div class="hero-caption"><div class="sub kai" id="typing"></div></div>
-    <div class="cta">
-      <button class="primary" id="cta1" type="button">读我的文章</button>
-      <button class="outline" id="cta2" type="button">看看我做的</button>
-    </div>
     <div class="hint">
       <span>移动指针，文字粒子会随之散开</span>
       <label><input type="checkbox" id="showField"> 显示力场</label>
@@ -45,7 +60,7 @@
   <section id="home-view" class="reveal">
     <div id="updates-group" class="module-group">
       <div class="section-head"><div><p class="eyebrow">LATEST / 最新动态</p><h2>最近在写</h2></div><a class="more" href="#/notes">查看全部 →</a></div>
-      <div class="updates" id="updates-grid"></div>
+      <div class="updates updates-layout"><div class="updates-main" id="updates-grid"></div><div class="updates-side" id="updates-side"></div></div>
     </div>
     <div id="series-group" class="module-group">
       <div class="section-head mt"><div><p class="eyebrow">FIELD CARDS / 我在写的</p><h2>专栏与实验</h2></div><span class="head-note" id="series-note"></span></div>
@@ -54,6 +69,8 @@
     <div id="projects-group" class="module-group">
       <div class="section-head mt"><div><p class="eyebrow">MATRIX / 我做的东西</p><h2>项目矩阵</h2></div><span class="head-note" id="project-note"></span></div>
       <div class="project-matrix" id="project-matrix"></div>
+      <div class="product-accordion" id="product-accordion"></div>
+      <div class="page-dots" id="page-dots" aria-label="分页"></div>
     </div>
     <div id="stats-group" class="module-group">
       <div class="section-head mt"><div><p class="eyebrow">TELEMETRY / 站点状态</p><h2>此刻</h2></div><span class="head-note">实时来自 /api/bootstrap 与 /api/posts</span></div>

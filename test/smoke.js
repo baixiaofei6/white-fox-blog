@@ -115,7 +115,7 @@ async function main() {
   r = await pub('POST', '/api/upload', Buffer.from('x'), { 'Content-Type': 'multipart/form-data; boundary=x' });
   assert('public upload 404', r.status === 404, r.text.slice(0, 160));
   r = await pub('GET', '/assets/app.css');
-  assert('assets css served', r.status === 200 && r.text.includes('--bg:#f8f8f8'));
+  assert('assets css served', r.status === 200 && r.text.includes('--bg:#fcfaf8'));
   r = await pub('GET', '/assets/../server.js');
   assert('path traversal rejected', r.status === 403 || r.status === 404, 'status=' + r.status);
 
@@ -271,19 +271,28 @@ async function main() {
   assert('admin js served', r.status === 200 && r.text.includes('/api/login/admin'));
   // ---- 暗色粒子发光资源与主题接口（静态资源可达） ----
   r = await adm('GET', '/assets/particle.js');
-  assert('particle script served', r.status === 200 && r.text.includes("ink: '#f5f5f5'") && r.text.includes('this.setTheme'), r.text.slice(0, 180));
+  assert('particle script served', r.status === 200 && r.text.includes("ink: '#fafafa'") && r.text.includes('this.setTheme'), r.text.slice(0, 180));
   assert('particle auto-return loop present', r.text.includes('RETURN_LERP = 0.22') && r.text.includes('setTimeout(tick, pushing ? 16 : TICK_MS)') && r.text.includes('IMPULSE_MS = 110'), r.text.slice(0, 220));
   assert('particle probe exposes displacement', r.text.includes('maxDisp:') && r.text.includes('forceActive:'), r.text.slice(0, 220));
   assert('particle batches draws into grouped paths', r.text.includes('ctx.beginPath();') && r.text.includes('ctx.fill();') && r.text.includes('lastDraw = '), r.text.slice(0, 220));
-  assert('particle has ornamental pattern layer', r.text.includes('PATTERN') && r.text.includes('petal') && r.text.includes('arc('), r.text.slice(0, 220));
-  assert('particle uses black-white palette', !r.text.includes('#7dd8ff') && !r.text.includes('rgba(73,177,245') && r.text.includes("ink: '#f5f5f5'"), r.text.slice(0, 220));
+  assert('particle has ornamental pattern layer', r.text.includes('HEART') && r.text.includes('heartX') && r.text.includes('heartY') && r.text.includes('arc(') && !r.text.includes('petals'), r.text.slice(0, 220));
+  assert('particle uses black-white palette', !r.text.includes('#7dd8ff') && !r.text.includes('rgba(73,177,245') && r.text.includes("ink: '#fafafa'"), r.text.slice(0, 220));
   assert('pointermove does not redraw whole canvas', !/function onMove\(e\)\{[\s\S]*?drawStatic\(\)/.test(r.text), r.text.slice(0, 220));
+  r = await adm('GET', '/assets/hero-banner.jpg');
+  assert('hero banner poster asset served', r.status === 200 && r.raw.length > 50000, 'status=' + r.status + ' bytes=' + r.raw.length);
   r = await adm('GET', '/assets/app.css');
   assert('dark particle glow css served', r.status === 200 && r.text.includes("body[data-theme=\"dark\"] #pt{filter:none}") && r.text.includes('.hero-caption .sub'), r.text.slice(0, 180));
   assert('no per-frame canvas CSS filter', r.status === 200 && !r.text.includes('#pt{filter:drop-shadow'), r.text.slice(0, 180));
-  assert('dark text contrast uses neutral grayscale', r.text.includes('--sub:#c7c7c7') && r.text.includes('--muted:#8f8f8f') && !r.text.includes('#7dd8ff') && !r.text.includes('73,177,245'), r.text.slice(0, 180));
+  assert('dark text contrast uses neutral grayscale', r.text.includes('--ink:#fafafa') && r.text.includes('--sub:#c7c7c7') && r.text.includes('--muted:#9a9a9a') && !r.text.includes('#7dd8ff') && !r.text.includes('73,177,245'), r.text.slice(0, 180));
+  assert('all surfaces use theme variables', !/background:\s*#fff\b/i.test(r.text) && !/background:\s*rgba\(255,\s*255,\s*255/i.test(r.text) && !/background:\s*rgba\(248,\s*248,\s*248/i.test(r.text), r.text.slice(0, 220));
+  assert('mimo layout classes present', r.text.includes('.hero-banner-shader') && r.text.includes('.particle-text-wrap') && r.text.includes('.model-card') && r.text.includes('.home-section') && r.text.includes('.page-dots'), r.text.slice(0, 220));
+  assert('spring bounce motion present', r.text.includes('cubic-bezier(.34,1.56,.64,1)'), r.text.slice(0, 180));
   r = await adm('GET', '/assets/app.js');
   assert('theme switch syncs particle', r.status === 200 && r.text.includes('bootstrap.particle.setTheme'), r.text.slice(0, 180));
+  assert('carousel pagination wired', r.text.includes('renderCarousel') && r.text.includes('carouselIndex') && r.text.includes('page-dots'), r.text.slice(0, 180));
+  assert('hero typing lines wired', r.text.includes('hero-line') && r.text.includes('typingLine'), r.text.slice(0, 180));
+  r = await pub('GET', '/');
+  assert('home markup follows reference structure', r.text.includes('hero-banner-shader') && r.text.includes('particle-text-wrap') && r.text.includes('updates-layout') && r.text.includes('product-accordion'), r.text.slice(0, 180));
   r = await adm('GET', '/README.md').catch(() => ({ status: 404, text: '' }));
   if (r.status === 200) assert('readme avoids reference brand name', !/MiMo|小米/i.test(r.text) && r.text.includes('极简黑白风格'), r.text.slice(0, 180));
 
