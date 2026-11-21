@@ -1,6 +1,7 @@
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
+  var EDITOR_DRAFT_KEY = window.EditorStudio.EDITOR_DRAFT_KEY;
   var state = { user: null, admin: false, settings: {}, layout: null, content: null };
   function say(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(say.tid); say.tid = setTimeout(function () { t.classList.remove('show'); }, 2600); }
   function api(url, opts) {
@@ -185,14 +186,14 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    $('post-zen').addEventListener('click', function () {
-      var shell = document.querySelector('.admin-editor-panel .editor-shell');
-      var on = shell.classList.toggle('zen');
-      document.body.classList.toggle('zen-open', on);
-      this.textContent = on ? '退出沉浸' : '沉浸写作';
-      if (on) $('post-body').focus();
+    var adminStudio = window.EditorStudio.bindEditorEnhancements({
+      key: EDITOR_DRAFT_KEY + ':admin', shell: document.querySelector('.admin-editor-panel .editor-shell'),
+      body: $('post-body'), title: $('post-title'), slug: $('post-slug'), count: $('post-count'),
+      status: $('post-status'), preview: $('post-preview'), toggle: $('post-preview-toggle'),
+      toggleZen: $('post-zen'), clear: $('post-draft-clear'), save: function () { $('post-create').click(); }
     });
-    $('post-body').addEventListener('input', function () { $('post-count').textContent = this.value.length + ' 字'; });
+    window.__adminStudio = adminStudio;
+    adminStudio.restoreDraft();
     $('admin-tabs').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-tab]'); if (!b) return;
       Array.prototype.forEach.call($('admin-tabs').children, function (x) { x.classList.toggle('active', x === b); });

@@ -197,10 +197,13 @@
             </div>
             <label>摘要<textarea id="edit-excerpt" rows="2" maxlength="300"></textarea></label>
           </div>
-          <label class="grow-label editor-body-label">正文 <span class="editor-body-tip" id="edit-count">0 字</span>
-            <textarea id="edit-body" rows="18" placeholder="在这里写正文，支持 HTML 标签……"></textarea>
+          <label class="grow-label editor-body-label">
+            <div class="editor-body-head"><span>正文</span><span class="editor-body-tip" id="edit-count">0 字</span><button type="button" class="text-button" id="edit-preview-toggle">预览</button></div>
+            <textarea id="edit-body" rows="18" spellcheck="false" placeholder="在这里写正文，支持 HTML 标签……"></textarea>
+            <div class="editor-preview" id="edit-preview" hidden></div>
           </label>
-          <div class="editor-actions"><button class="primary" id="edit-save" type="button">发布 / 更新文章</button><span id="edit-message" class="head-note"></span></div>
+          <div class="editor-status" id="edit-status">就绪 · 草稿自动保存在本机 · Ctrl+S 保存 / Ctrl+P 预览 / Ctrl+Shift+F 沉浸</div>
+          <div class="editor-actions"><button class="primary" id="edit-save" type="button">发布 / 更新文章</button><button class="outline" id="edit-draft-clear" type="button">清空草稿</button><span id="edit-message" class="head-note"></span></div>
         </div>
         <aside class="editor-side">
           <h3>已有文章</h3><p class="editor-hint">点「载入」把旧文章放进左侧编辑器，改完再发布即可更新。</p>
@@ -215,6 +218,7 @@
 <div class="cursor-ring" id="ring"></div>
 <div id="toast"></div>
 <script src="/assets/particle.js"></script>
+<script src="/assets/editor-studio.js"></script>
 <script src="/assets/app.js"></script>
 </body>
 </html>

@@ -379,6 +379,21 @@ async function main() {
   assert('editor CSS defines tall body field, zen mode and grid', r.status === 200 && /#edit-body[^{]*\{[^}]*min-height:4\d\dpx/.test(r.text) && /\.editor-shell\.zen/.test(r.text) && /\.manage-grid\{[^}]*grid-template-columns/.test(r.text), (r.text.match(/#edit-body\{[^}]*\}/)||[''])[0]);
   assert('form labels stack above inputs for readability', r.status === 200 && /\.editor-shell label[^{]*\{[^}]*flex-direction:column/.test(r.text), (r.text.match(/\.editor-shell label\{[^}]*\}/)||[''])[0]);
 
+  // ---- 写作台组件精细化（用户 m01027，学习 Typora / StackEdit / editor.md） ----
+  r = await pub('GET', '/assets/app.js');
+  assert('public editor delegates to shared writing studio', r.status === 200 && /EditorStudio[.]bindEditorEnhancements/.test(r.text) && /EDITOR_DRAFT_KEY/.test(r.text) && /__editStudio/.test(r.text), (r.text.match(/var editStudio[\s\S]{0,120}/)||[''])[0].slice(0,120));
+  r = await adm('GET', '/admin');
+  r = await pub('GET', '/assets/admin.js');
+  assert('admin editor delegates to shared writing studio', r.status === 200 && /EditorStudio[.]bindEditorEnhancements/.test(r.text) && /__adminStudio/.test(r.text), (r.text.match(/var adminStudio[\s\S]{0,120}/)||[''])[0].slice(0,120));
+  r = await pub('GET', '/assets/editor-studio.js');
+  assert('shared studio provides draft persistence, preview and shortcuts', r.status === 200 && /EDITOR_DRAFT_KEY/.test(r.text) && /localStorage[.]setItem[(]EDITOR_DRAFT_KEY/.test(r.text) && /localStorage[.]getItem[(]EDITOR_DRAFT_KEY/.test(r.text) && /editor shortcut/.test(r.text) && /function togglePreview/.test(r.text), (r.text.match(/var EDITOR_DRAFT_KEY[^;]*/)||[''])[0]);
+  r = await pub('GET', '/assets/app.css');
+  assert('editor CSS has subtle caret and focus metrics from writing tools', r.status === 200 && /caret-color:var[(]--accent[)]/.test(r.text) && /tab-size:2/.test(r.text) && /editor-meta-grid/.test(r.text), (r.text.match(/#edit-body,#post-body\{[^}]*\}/)||[''])[0].slice(0,220));
+  assert('editor preview panel and status strip are styled', r.status === 200 && /[.]editor-preview[^{]*\{[^}]*\}/.test(r.text) && /[.]editor-status\{[^}]*\}/.test(r.text) && /[.]editor-shell [.]editor-actions/.test(r.text), (r.text.match(/[.]editor-preview[^}]*\}/)||[''])[0].slice(0,180));
+  r = await pub('GET', '/');
+  assert('public editor exposes preview and status surface', r.status === 200 && /id="edit-preview"/.test(r.text) && /id="edit-status"/.test(r.text) && /id="edit-draft-clear"/.test(r.text) && /id="edit-preview-toggle"/.test(r.text), (r.text.match(/id="edit-status"[^>]*/)||[''])[0]);
+  r = await adm('GET', '/admin');
+  assert('admin editor exposes preview and status surface', r.status === 200 && /id="post-preview"/.test(r.text) && /id="post-status"/.test(r.text) && /id="post-draft-clear"/.test(r.text) && /id="post-preview-toggle"/.test(r.text), (r.text.match(/id="post-status"[^>]*/)||[''])[0]);
   r = await adm('GET', '/api/does-not-exist');
   assert('unknown API 404 JSON', r.status === 404 && r.json.error === 'NOT_FOUND');
   r = await adm('POST', '/api/logout', {}, auth);

@@ -3,6 +3,7 @@
 
   var state = { site: {}, providers: {}, user: null, admin: false, posts: [], projects: [], layout: null, guestbook: [], userMode: null, carouselIndex: 0, typingTimers: [], editing: null };
   var $ = function (id) { return document.getElementById(id); };
+  var EDITOR_DRAFT_KEY = window.EditorStudio.EDITOR_DRAFT_KEY;
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
@@ -444,15 +445,14 @@
     $('register-submit').addEventListener('click', submitRegister);
     $('login-logout').addEventListener('click', logout);
     $('edit-save').addEventListener('click', savePost);
-    var zenBtn = $('edit-zen'), zenShell = $('editor-shell');
-    if (zenBtn && zenShell) zenBtn.addEventListener('click', function () {
-      var on = zenShell.classList.toggle('zen');
-      document.body.classList.toggle('zen-open', on);
-      zenBtn.textContent = on ? '退出沉浸' : '沉浸写作';
-      if (on) $('edit-body').focus();
+    var editStudio = window.EditorStudio.bindEditorEnhancements({
+      key: EDITOR_DRAFT_KEY + ':public', shell: $('editor-shell'), body: $('edit-body'),
+      title: $('edit-title'), slug: $('edit-slug'), count: $('edit-count'),
+      status: $('edit-status'), preview: $('edit-preview'), toggle: $('edit-preview-toggle'),
+      toggleZen: $('edit-zen'), clear: $('edit-draft-clear'), save: savePost
     });
-    var editBody = $('edit-body'), editCount = $('edit-count');
-    if (editBody && editCount) editBody.addEventListener('input', function () { editCount.textContent = editBody.value.length + ' 字'; });
+    window.__editStudio = editStudio;
+    editStudio.restoreDraft();
     $('theme-switch').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-mode]'); if (b) setMode(b.dataset.mode);
     });

@@ -97,8 +97,13 @@
           <label>日期<input id="post-date" type="date"></label><label>标签<input id="post-tags" placeholder="逗号分隔"></label>
           <label>摘要<input id="post-excerpt"></label><label>封面 URL<input id="post-cover"></label>
         </div>
-        <label class="wide grow-label editor-body-label">正文 HTML <span class="editor-body-tip" id="post-count">0 字</span><textarea id="post-body" rows="18" placeholder="在这里写正文，支持 HTML 标签……"></textarea></label>
-        <div class="editor-actions"><button class="primary" id="post-create" type="button">发布 / 更新文章</button></div>
+        <div class="wide grow-label editor-body-label">
+          <div class="editor-body-head"><span>正文 HTML</span><span class="editor-body-tip" id="post-count">0 字</span><button type="button" class="text-button" id="post-preview-toggle">预览</button></div>
+          <textarea id="post-body" rows="18" spellcheck="false" placeholder="在这里写正文，支持 HTML 标签……"></textarea>
+          <div class="editor-preview" id="post-preview" hidden></div>
+        </div>
+        <div class="editor-status" id="post-status">就绪 · 草稿自动保存在本机 · Ctrl+S 保存 / Ctrl+P 预览 / Ctrl+Shift+F 沉浸</div>
+        <div class="editor-actions"><button class="primary" id="post-create" type="button">发布 / 更新文章</button><button class="outline" id="post-draft-clear" type="button">清空草稿</button></div>
       </div>
       <h2 class="mt">已有文章</h2><div id="admin-posts" class="manage-list"></div>
     </section>
@@ -135,6 +140,7 @@
   </section>
 </main>
 <div id="toast"></div>
+<script src="/assets/editor-studio.js"></script>
 <script src="/assets/admin.js"></script>
 </body>
 </html>
