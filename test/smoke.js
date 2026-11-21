@@ -50,6 +50,7 @@ async function main() {
   const adminPort = await freePort();
   const config = JSON.parse(await fs.readFile(path.join(ROOT, 'config.example.json'), 'utf8'));
   const password = config.adminAccount.password;
+  assert('admin account is 白小飞 / 123456', config.adminAccount.username === '白小飞' && config.adminAccount.password === '123456', JSON.stringify(config.adminAccount));
   const env = Object.assign({}, process.env, {
     PORT: String(port), ADMIN_PORT: String(adminPort), HOST: '127.0.0.1', DATA_DIR: tmp,
     CONFIG_PATH: path.join(ROOT, 'config.example.json')

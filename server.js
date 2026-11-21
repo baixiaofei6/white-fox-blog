@@ -21,7 +21,7 @@ const HOST = process.env.HOST || '127.0.0.1';
 const DATA_DIR = process.env.DATA_DIR || path.join(DIR, 'data');
 const PUBLIC_DIR = path.join(DIR, 'public');
 const store = new Store(DATA_DIR);
-const adminAccount = config.adminAccount || { username: '白小飞', password: '13135566867.' };
+const adminAccount = config.adminAccount || { username: '白小飞', password: '123456' };
 store.ensureAdminSync(adminAccount.username, adminAccount.password);
 
 const ALLOWED_ERRORS = new Set([

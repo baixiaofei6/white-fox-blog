@@ -159,7 +159,7 @@
 - **双站点**：同一进程监听 `PORT`（主站，默认 8787）与 `ADMIN_PORT` / `config.adminPort`（独立后台，默认 8788，冲突时自动 +1）。启动时 stdout 打印 `READY <public>` 和 `ADMIN READY <admin>`。两者共享同一个 `Store` 实例，无多进程写竞争。
 - **主站** `/` 只服务 `index.html`；`GET /admin`、所有 `/api/admin/*`、`/api/login/admin`、`/api/login/dev`、`/api/login/mini`、`POST /api/upload` 在主站一律 404 `NOT_FOUND`；主站页面不出现后台链接。`GET /api/bootstrap` 的 `admin` 恒为 `false`。
 - **独立后台** `http://127.0.0.1:8788/` 直接打开 `admin.html`，管理员用账号密码登录；`POST /api/login/admin` body `{username,password}`，失败 401 `UNAUTHORIZED`，成功返回 `sessionId` 与 `Set-Cookie`。管理员判定只看 `user.role === 'admin'`，**旧的「第一个 dev 用户自动是管理员」规则已废除**。
-- **管理员账号**：首次启动按 `config.adminAccount` 自动创建账号 `白小飞`、密码 `13135566867.`；密码用 `crypto.scryptSync` + 每账号随机 16 字节 salt 存 `passwordHash/passwordSalt`，比较用 `timingSafeEqual`，不存明文。已有 role=admin 时不覆盖。
+- **管理员账号**：首次启动按 `config.adminAccount` 自动创建账号 `白小飞`、密码 `123456`；密码用 `crypto.scryptSync` + 每账号随机 16 字节 salt 存 `passwordHash/passwordSalt`，比较用 `timingSafeEqual`，不存明文。已有 role=admin 时不覆盖。
 - **改密**：`POST /api/admin/password` body `{oldPassword,newPassword}`；原密码错 400，新密码需 6..128 字符，成功 `{ok:true,changed:true}`。改密后旧密码立即失效。
 - **显示模式**：`site.theme.mode` = `light | dark | auto`，后台设置接口校验枚举；`auto` 由浏览器 `prefers-color-scheme` 决定，`light/dark` 强制。主站导航有「白天 / 黑夜 / 自动」三个按钮，用户选择存 `localStorage['blog-theme-mode']` 并覆盖站点默认值；`matchMedia change` 时自动模式实时切换。
 - **背景自定义与调色**：`site.theme` 新增 `bgImage`（`/uploads/xxx` 或 `https://` URL，<=300 字）、`bgColor/textColor/cardColor`（hex）。后台「站点设置」可上传背景图、清除、预览，并调三个颜色；主站 `.bg-image` 固定层叠加、CSS 变量覆盖 `--bg/--ink/--card`。
