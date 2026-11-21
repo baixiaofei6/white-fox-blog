@@ -144,7 +144,7 @@
   function submitLogin() {
     var u = $('login-username').value.trim(), p = $('login-password').value;
     if (!u || !p) { $('login-message').textContent = '请填写账号和密码'; $('login-message').className = 'head-note account-error'; return; }
-    json('/api/login', { username: u, password: p }).then(function () {
+    json('/api/login', 'POST', { username: u, password: p }).then(function () {
       $('login-username').value = ''; $('login-password').value = '';
       refreshSession().then(function () {
         $('login-message').textContent = '登录成功' + (state.admin ? '，已识别为管理员' : '');
@@ -158,7 +158,7 @@
     var u = $('register-username').value.trim(), n = $('register-nickname').value.trim(), p = $('register-password').value;
     var msg = $('register-message');
     if (!u || !p) { msg.textContent = '请填写账号和密码'; msg.className = 'head-note account-error'; return; }
-    json('/api/register', { username: u, nickname: n || u, password: p }).then(function () {
+    json('/api/register', 'POST', { username: u, nickname: n || u, password: p }).then(function () {
       $('register-username').value = ''; $('register-nickname').value = ''; $('register-password').value = '';
       msg.textContent = '注册成功，已自动登录'; msg.className = 'head-note account-success';
       refreshSession().then(function () { renderNav(); say('注册成功，已自动登录'); location.hash = '#/'; });
@@ -166,7 +166,7 @@
   }
 
   function logout() {
-    json('/api/logout', {}).then(function () { state.user = null; state.admin = false; renderNav(); route(); say('已退出登录'); }, function (e) { say(e.message); });
+    json('/api/logout', 'POST', {}).then(function () { state.user = null; state.admin = false; renderNav(); route(); say('已退出登录'); }, function (e) { say(e.message); });
   }
 
   function clearEditor() {
@@ -199,7 +199,7 @@
     var tags = $('edit-tags').value.split(/[,，]/).map(function (x) { return x.trim(); }).filter(Boolean);
     var payload = { title: title, slug: $('edit-slug').value.trim(), date: $('edit-date').value,
       tags: tags, excerpt: $('edit-excerpt').value, body: $('edit-body').value };
-    json('/api/admin/posts', payload).then(function (r) {
+    json('/api/admin/posts', 'POST', payload).then(function (r) {
       $('edit-message').textContent = '已保存：' + r.post.slug;
       state.editing = r.post.slug; $('edit-slug').value = r.post.slug;
       return api('/api/posts').then(function (res) { state.posts = res.posts; renderHome(); loadManagePosts(); });

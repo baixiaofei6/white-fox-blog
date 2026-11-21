@@ -359,6 +359,17 @@ async function main() {
   r = await pub('GET', '/api/guestbook');
   assert('guestbook shows who left each message', r.status === 200 && r.json.guestbook.some(g => g.nickname === '新同学' && g.text === '注册用户留言'), r.text.slice(0, 220));
 
+  // ---- fetch method bug / 蝴蝶改爱心 / 力场可见（用户 m00853） ----
+  r = await pub('GET', '/assets/app.js');
+  assert('json() calls pass explicit method to avoid invalid fetch method', r.status === 200 && !/json\('\/api\/(login|register|logout|admin\/posts)'\s*,\s*\{/.test(r.text) && /json\('\/api\/login'\s*,\s*'POST'/.test(r.text), (r.text.match(/json\('\/api\/login'[^;]*/)||[''])[0]);
+  r = await pub('GET', '/');
+  assert('hero poster is heart not butterfly', r.status === 200 && /class="poster"[^>]+src="\/assets\/heart-banner\.svg"/.test(r.text) && !r.text.includes('hero-banner.jpg'), (r.text.match(/<img class="poster"[^>]*>/)||[''])[0]);
+  r = await pub('GET', '/assets/heart-banner.svg');
+  assert('heart banner svg exists with heart path', r.status === 200 && /<svg[\s\S]*<\/svg>/.test(r.text) && /[Mm]\s*\d+[\s,]+\d+[\s,]+[Cc]/.test(r.text) && /heart/i.test(r.text), r.text.slice(0, 160));
+  r = await pub('GET', '/assets/particle.js');
+  assert('force field ring is drawn with visible stroke and center', r.status === 200 && r.text.includes('function drawFieldRing') && r.text.includes('setLineDash') && /fieldCtx\.arc\(ptr\.sx \|\| W \/ 2, ptr\.sy \|\| H \/ 2, RADIUS/.test(r.text) && /fieldCtx\.arc\(ptr\.sx \|\| W \/ 2, ptr\.sy \|\| H \/ 2,\s*3/.test(r.text), r.text.slice(0, 180));
+  assert('heart pattern stays centered and prominent', r.status === 200 && /HEART\s*=\s*\{[^}]*cx:\s*0\.5/.test(r.text) && /scale:\s*0\.7/.test(r.text), (r.text.match(/var HEART[^;]*/)||[''])[0]);
+
   r = await adm('GET', '/api/does-not-exist');
   assert('unknown API 404 JSON', r.status === 404 && r.json.error === 'NOT_FOUND');
   r = await adm('POST', '/api/logout', {}, auth);

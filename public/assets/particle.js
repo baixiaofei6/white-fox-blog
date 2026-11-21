@@ -144,6 +144,20 @@ function ParticleHero(text, subtitle, opts) {
     ensureAnim(16);
   }
 
+  function drawFieldRing(pushing) {
+    if (!showFieldEl || !showFieldEl.checked) { fieldCtx.clearRect(0, 0, W, H); return; }
+    fieldCtx.clearRect(0, 0, W, H);
+    fieldCtx.save();
+    fieldCtx.setLineDash(pushing ? [] : [6, 6]);
+    fieldCtx.beginPath(); fieldCtx.arc(ptr.sx || W / 2, ptr.sy || H / 2, RADIUS, 0, 2 * Math.PI);
+    fieldCtx.strokeStyle = pushing ? 'rgba(31,35,41,.55)' : 'rgba(120,120,120,.35)';
+    fieldCtx.lineWidth = 2; fieldCtx.stroke();
+    fieldCtx.setLineDash([]);
+    fieldCtx.beginPath(); fieldCtx.arc(ptr.sx || W / 2, ptr.sy || H / 2, 3, 0, 2 * Math.PI);
+    fieldCtx.fillStyle = 'rgba(31,35,41,.7)'; fieldCtx.fill();
+    fieldCtx.restore();
+  }
+
   function drawStatic() {
     ctx.clearRect(0, 0, W, H);
     var groups = {};
@@ -230,22 +244,7 @@ function ParticleHero(text, subtitle, opts) {
       ptr.hit = 0;
     }
     drawStatic();
-    if (document.getElementById('showField').checked) {
-      fieldCtx.clearRect(0, 0, W, H);
-      fieldCtx.beginPath(); fieldCtx.arc(ptr.sx, ptr.sy, RADIUS, 0, 2 * Math.PI);
-      fieldCtx.strokeStyle = pushing ? 'rgba(31,35,41,.55)' : 'rgba(120,120,120,.25)';
-      fieldCtx.lineWidth = 2; fieldCtx.stroke();
-      if (CFG.halo && pushing) {
-        fieldCtx.beginPath(); fieldCtx.arc(ptr.sx, ptr.sy, RADIUS * 1.35, 0, 2 * Math.PI);
-        fieldCtx.strokeStyle = 'rgba(31,35,41,.12)'; fieldCtx.lineWidth = 14; fieldCtx.stroke();
-      }
-    } else {
-      fieldCtx.clearRect(0, 0, W, H);
-      if (document.getElementById('showField').checked) {
-        fieldCtx.beginPath(); fieldCtx.arc(ptr.sx, ptr.sy, RADIUS, 0, 2 * Math.PI);
-        fieldCtx.strokeStyle = 'rgba(120,120,120,.35)'; fieldCtx.lineWidth = 1.5; fieldCtx.stroke();
-      }
-    }
+    drawFieldRing(pushing);
     var settled = maxDisp() <= (reduced ? .4 : 1.2);
     var keepGoing = !reduced || pushing || entering || !settled;
     if (keepGoing) animTimer = setTimeout(tick, pushing ? 16 : TICK_MS);
@@ -279,7 +278,7 @@ function ParticleHero(text, subtitle, opts) {
   function onWindowOut(e) { if (!e.relatedTarget) { ptr.active = false; ensureAnim(TICK_MS); } }
   function onUp(e) { if (e.pointerType !== 'mouse') { ptr.active = false; ensureAnim(TICK_MS); } }
   function onCancel() { ptr.active = false; ensureAnim(TICK_MS); }
-  function onField() { fieldCvs.style.display = showFieldEl.checked ? 'block' : 'none'; }
+  function onField() { fieldCvs.style.display = showFieldEl.checked ? 'block' : 'none'; if (showFieldEl.checked) drawFieldRing(false); }
   window.addEventListener('pointermove', onMove, { passive: true });
   hero.addEventListener('pointerdown', onDown);
   window.addEventListener('pointerout', onWindowOut);
