@@ -143,14 +143,26 @@
 
   function submitLogin() {
     var u = $('login-username').value.trim(), p = $('login-password').value;
-    if (!u || !p) { $('login-message').textContent = '请填写账号和密码'; return; }
-    json('/api/login/admin', { username: u, password: p }).then(function () {
+    if (!u || !p) { $('login-message').textContent = '请填写账号和密码'; $('login-message').className = 'head-note account-error'; return; }
+    json('/api/login', { username: u, password: p }).then(function () {
       $('login-username').value = ''; $('login-password').value = '';
       refreshSession().then(function () {
         $('login-message').textContent = '登录成功' + (state.admin ? '，已识别为管理员' : '');
+      $('login-message').className = 'head-note account-success';
         route(); say(state.admin ? '管理员已登录，出现「管理」选项卡' : '已登录');
       });
-    }, function (e) { $('login-message').textContent = e.message; say(e.message); });
+    }, function (e) { $('login-message').textContent = e.message; $('login-message').className = 'head-note account-error'; say(e.message); });
+  }
+
+  function submitRegister() {
+    var u = $('register-username').value.trim(), n = $('register-nickname').value.trim(), p = $('register-password').value;
+    var msg = $('register-message');
+    if (!u || !p) { msg.textContent = '请填写账号和密码'; msg.className = 'head-note account-error'; return; }
+    json('/api/register', { username: u, nickname: n || u, password: p }).then(function () {
+      $('register-username').value = ''; $('register-nickname').value = ''; $('register-password').value = '';
+      msg.textContent = '注册成功，已自动登录'; msg.className = 'head-note account-success';
+      refreshSession().then(function () { renderNav(); say('注册成功，已自动登录'); location.hash = '#/'; });
+    }, function (e) { msg.textContent = e.message; msg.className = 'head-note account-error'; });
   }
 
   function logout() {
@@ -350,6 +362,7 @@
   }
   function submitGuestbook(nickId, textId) {
     var nickname = $(nickId) ? $(nickId).value.trim() : '';
+    if (state.user) nickname = state.user.nickname;
     var text = $(textId) ? $(textId).value.trim() : '';
     if (!state.user && !nickname) { say('请填写昵称'); return; }
     if (!text) { say('请写点内容'); return; }
@@ -362,7 +375,7 @@
   // ---- 路由与粒子 ----
   var particleStopped = false;
   function forceProbe() { return window.__particleProbe ? window.__particleProbe() : null; }
-  window.__blogApp = { state: state, submitLogin: submitLogin, savePost: savePost, route: route, refreshSession: refreshSession, forceProbe: forceProbe };
+  window.__blogApp = { state: state, submitLogin: submitLogin, submitRegister: submitRegister, savePost: savePost, route: route, refreshSession: refreshSession, forceProbe: forceProbe };
   function suspendParticle() { if (bootstrap.particle && !particleStopped) { bootstrap.particle.destroy(); particleStopped = true; } }
   function resumeParticle() {
     if (particleStopped && window.BlogParticle) {
@@ -373,7 +386,9 @@
   }
   function route() {
     var h = location.hash || '#/', v = 'home-view';
-    if (h === '#/login') {
+    if (h === '#/register') {
+      v = 'register-view';
+    } else if (h === '#/login') {
       v = 'login-view';
       if (state.admin) { location.hash = '#/admin/manage'; return; }
     } else if (h === '#/logout') { logout(); return; }
@@ -426,6 +441,7 @@
     $('cta2').addEventListener('click', function () { location.hash = '#/projects'; });
     $('cta-version').addEventListener('click', function () { location.hash = '#/notes'; });
     $('login-submit').addEventListener('click', submitLogin);
+    $('register-submit').addEventListener('click', submitRegister);
     $('login-logout').addEventListener('click', logout);
     $('edit-save').addEventListener('click', savePost);
     $('theme-switch').addEventListener('click', function (e) {

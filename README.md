@@ -28,7 +28,7 @@ npm start                            # 或 node server.js
 ## 自检
 
 ```bash
-npm test        # 115 passed, 0 failed
+npm test        # , 0 failed
 ```
 
 ## 视觉说明
@@ -38,3 +38,4 @@ Hero 海报上叠加「你好，这里是白小飞」欢迎图（淡化处理）
 ## 仓库边界
 
 本仓库 = 原 `super-duper-carnival` 中的个人博客部分，已独立拆分发布；局域网聊天项目不在本仓库内。
+test/smoke.js 当前 130 项断言全部通过（含注册账号、登录账号/密码分别提示、留言署名、首页粒子与历史文章回归）。

@@ -24,6 +24,7 @@
       <a href="#/guestbook">留言板</a>
       <a href="#/about">关于</a>
       <a href="#/login" id="login-entry">登录</a>
+      <a href="#/register" id="register-entry">注册</a>
       <a href="#/admin/manage" id="admin-tab" hidden>管理</a>
     </div>
     <span class="theme-switch" id="theme-switch" role="group" aria-label="显示模式">
@@ -161,6 +162,19 @@
         <label>密码<input id="login-password" type="password" maxlength="128" autocomplete="current-password" placeholder="密码"></label>
       </div>
       <div class="row mt"><button class="primary" id="login-submit" type="button">登录</button><button class="outline" id="login-logout" type="button">退出登录</button><span id="login-message" class="head-note"></span></div>
+    </div>
+  </section>
+
+  <section id="register-view" class="reveal" hidden>
+    <div class="section-head"><div><p class="eyebrow">ACCOUNT / 注册</p><h2>注册账号</h2></div></div>
+    <div class="panel glass login-panel">
+      <p class="warn">注册后即可登录；登录后留言会自动显示你的昵称，不用再手动填写。</p>
+      <div class="admin-login-grid">
+        <label>账号<input id="register-username" maxlength="40" autocomplete="username" placeholder="2..40 位字母、数字或中文"></label>
+        <label>昵称<input id="register-nickname" maxlength="40" placeholder="留言时显示的名字"></label>
+        <label>密码<input id="register-password" type="password" maxlength="128" autocomplete="new-password" placeholder="至少 6 位"></label>
+      </div>
+      <div class="row mt"><button class="primary" id="register-submit" type="button">注册并登录</button><span id="register-message" class="head-note"></span></div>
     </div>
   </section>
 

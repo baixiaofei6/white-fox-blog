@@ -279,7 +279,7 @@ function ParticleHero(text, subtitle, opts) {
   function onWindowOut(e) { if (!e.relatedTarget) { ptr.active = false; ensureAnim(TICK_MS); } }
   function onUp(e) { if (e.pointerType !== 'mouse') { ptr.active = false; ensureAnim(TICK_MS); } }
   function onCancel() { ptr.active = false; ensureAnim(TICK_MS); }
-  function onField() { fieldCvs.style.display = this.checked ? 'block' : 'none'; }
+  function onField() { fieldCvs.style.display = showFieldEl.checked ? 'block' : 'none'; }
   window.addEventListener('pointermove', onMove, { passive: true });
   hero.addEventListener('pointerdown', onDown);
   window.addEventListener('pointerout', onWindowOut);

@@ -50,7 +50,7 @@ function fail(res, status, code, message) {
 
 function publicUser(u) {
   if (!u) return null;
-  return { id: u.id, nickname: u.nickname, avatar: u.avatar || '' };
+  return { id: u.id, nickname: u.nickname, avatar: u.avatar || '', username: u.username || '' };
 }
 
 function sessionId(req) {
@@ -269,6 +269,25 @@ async function api(req, res, u, surface) {
       'X-Content-Type-Options': 'nosniff'
     }, corsHeaders()));
     return res.end(rssXml());
+  }
+
+  if (pathname === '/api/register' && method === 'POST') {
+    const b = await U.readJson(req, config.upload.maxBytes);
+    const result = await store.registerUser({ username: b.username, password: b.password, nickname: b.nickname || b.username });
+    if (result.error) {
+      const status = result.error === 'USERNAME_TAKEN' ? 409 : 400;
+      return fail(res, status, 'BAD_REQUEST', result.message);
+    }
+    return issueSession(res, result.user, 201);
+  }
+
+  if (pathname === '/api/login' && method === 'POST') {
+    const b = await U.readJson(req, config.upload.maxBytes);
+    const result = store.checkPassword(b.username, b.password);
+    if (result.error === 'USERNAME_NOT_FOUND') return fail(res, 401, 'UNAUTHORIZED', '账号不存在，请检查账号或先注册');
+    if (result.error === 'PASSWORD_MISMATCH') return fail(res, 401, 'UNAUTHORIZED', '密码错误，请重新输入密码');
+    if (!result.user) return fail(res, 401, 'UNAUTHORIZED', '账号或密码错误');
+    return issueSession(res, result.user);
   }
 
   if (pathname === '/api/login/admin' && method === 'POST') {

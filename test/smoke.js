@@ -140,7 +140,7 @@ async function main() {
   r = await pub('GET', '/assets/hello-baixiaofei.svg');
   assert('welcome portrait asset served', r.status === 200 && /<svg[\s\S]*你好，这里是白小飞/.test(r.text), r.text.slice(0, 180));
   r = await pub('GET', '/assets/app.js');
-  assert('front end login and admin tab flow', r.status === 200 && r.text.includes("'/api/login/admin'") && r.text.includes('admin-tab') && r.text.includes('login-entry') && r.text.includes('state.admin') && r.text.includes("json('/api/admin/posts'"), r.text.slice(0, 180));
+  assert('front end login and admin tab flow', r.status === 200 && r.text.includes("'/api/login'") && r.text.includes('admin-tab') && r.text.includes('login-entry') && r.text.includes('state.admin') && r.text.includes("json('/api/admin/posts'"), r.text.slice(0, 180));
   assert('front end keeps force field on hero', r.status === 200 && r.text.includes('window.BlogParticle.init') && r.text.includes('__particleProbe') && r.text.includes('forceProbe'), r.text.slice(0, 180));
   assert('front end never requests missing update-0 image', r.status === 200 && !r.text.includes("'/assets/update-' + i + '.png'") && !r.text.includes("'/assets/update-0.png'"), r.text.slice(0, 180));
   assert('front end hides broken images instead of broken icon', r.status === 200 && r.text.includes('function bindImageFallback') && r.text.includes("addEventListener('error'"), r.text.slice(0, 180));
@@ -333,6 +333,31 @@ async function main() {
   })(), r.text.slice(0, 180));
   r = await adm('GET', '/README.md').catch(() => ({ status: 404, text: '' }));
   if (r.status === 200) assert('readme avoids reference brand name', !/MiMo|小米/i.test(r.text) && r.text.includes('极简黑白风格'), r.text.slice(0, 180));
+
+  // ---- 注册账号 / 精确登录 / 首页粒子与历史文章回归（用户 m00764） ----
+  r = await pub('GET', '/assets/particle.js');
+  assert('onField must not rely on this binding (strict mode)', r.status === 200 && /function onField\(\)\s*\{[^}]*showFieldEl\.checked/.test(r.text) && !/function onField\(\)\s*\{[^}]*this\.checked/.test(r.text), r.text.slice(0, 180));
+  r = await pub('GET', '/assets/app.css');
+  assert('welcome portrait has readable opacity', r.status === 200 && /\.hero-portrait\{[^}]*opacity:\.([6-9]|1)/.test(r.text), (r.text.match(/\.hero-portrait\{[^}]*\}/)||[''])[0]);
+  r = await pub('GET', '/');
+  assert('index has register entry and view', r.text.includes('id="register-entry"') && r.text.includes('id="register-view"') && r.text.includes('id="register-submit"'), r.text.slice(0, 180));
+  r = await pub('GET', '/assets/app.js');
+  assert('frontend implements register and precise login errors', r.status === 200 && r.text.includes("'/api/register'") && r.text.includes("'/api/login'") && r.text.includes('function submitRegister') && r.text.includes('account-error') && r.text.includes('register-message'), r.text.slice(0, 180));
+  r = await pub('POST', '/api/register', { username: 'newstudent', password: 'regpass123', nickname: '新同学' });
+  const regCookie = (r.headers['set-cookie'] || []).map(s => s.split(';')[0]).join('; ');
+  assert('public register creates user + session', r.status === 201 && r.json.user && r.json.user.nickname === '新同学' && !!r.json.sessionId, r.text.slice(0, 220));
+  r = await pub('POST', '/api/register', { username: 'newstudent', password: 'regpass123', nickname: '又一个人' });
+  assert('duplicate register rejected with clear message', r.status === 409 && /已被注册|已存在/.test(r.text), r.text.slice(0, 200));
+  r = await pub('POST', '/api/login', { username: 'newstudent', password: 'regpass123' });
+  assert('generic login works for registered user', r.status === 200 && r.json.user.nickname === '新同学', r.text.slice(0, 200));
+  r = await pub('POST', '/api/login', { username: 'no-such-account', password: 'whatever' });
+  assert('login wrong account gives explicit account error', r.status === 401 && /账号/.test(r.text) && !/密码错误/.test(r.text), r.text.slice(0, 200));
+  r = await pub('POST', '/api/login', { username: 'newstudent', password: 'wrong-password' });
+  assert('login wrong password gives explicit password error', r.status === 401 && /密码/.test(r.text) && !/账号不存在/.test(r.text), r.text.slice(0, 200));
+  r = await pub('POST', '/api/guestbook', { text: '注册用户留言' }, { Cookie: regCookie });
+  assert('registered user guestbook uses own nickname', r.status === 201 && r.json.entry.nickname === '新同学', r.text.slice(0, 200));
+  r = await pub('GET', '/api/guestbook');
+  assert('guestbook shows who left each message', r.status === 200 && r.json.guestbook.some(g => g.nickname === '新同学' && g.text === '注册用户留言'), r.text.slice(0, 220));
 
   r = await adm('GET', '/api/does-not-exist');
   assert('unknown API 404 JSON', r.status === 404 && r.json.error === 'NOT_FOUND');
