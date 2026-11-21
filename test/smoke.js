@@ -275,7 +275,8 @@ async function main() {
   assert('particle auto-return loop present', r.text.includes('RETURN_LERP = 0.22') && r.text.includes('setTimeout(tick, pushing ? 16 : TICK_MS)') && r.text.includes('IMPULSE_MS = 110'), r.text.slice(0, 220));
   assert('particle probe exposes displacement', r.text.includes('maxDisp:') && r.text.includes('forceActive:'), r.text.slice(0, 220));
   assert('particle batches draws into grouped paths', r.text.includes('ctx.beginPath();') && r.text.includes('ctx.fill();') && r.text.includes('lastDraw = '), r.text.slice(0, 220));
-  assert('particle has ornamental pattern layer', r.text.includes('HEART') && r.text.includes('heartX') && r.text.includes('heartY') && r.text.includes('arc(') && !r.text.includes('petals'), r.text.slice(0, 220));
+  assert('particle has heart pattern layer', r.text.includes('HEART') && r.text.includes('heartX') && r.text.includes('heartY') && r.text.includes('arc(') && !r.text.includes('petals'), r.text.slice(0, 220));
+  assert('particle heart is layered and visible', r.text.includes('HEART') && /heartX\(t\)/.test(r.text) && r.text.includes('patternPoints(') && r.text.includes('pattern: true') && r.text.includes('q.pattern'), r.text.slice(0, 220));
   assert('particle uses black-white palette', !r.text.includes('#7dd8ff') && !r.text.includes('rgba(73,177,245') && r.text.includes("ink: '#fafafa'"), r.text.slice(0, 220));
   assert('pointermove does not redraw whole canvas', !/function onMove\(e\)\{[\s\S]*?drawStatic\(\)/.test(r.text), r.text.slice(0, 220));
   r = await adm('GET', '/assets/hero-banner.jpg');
@@ -286,6 +287,7 @@ async function main() {
   assert('dark text contrast uses neutral grayscale', r.text.includes('--ink:#fafafa') && r.text.includes('--sub:#c7c7c7') && r.text.includes('--muted:#9a9a9a') && !r.text.includes('#7dd8ff') && !r.text.includes('73,177,245'), r.text.slice(0, 180));
   assert('all surfaces use theme variables', !/background:\s*#fff\b/i.test(r.text) && !/background:\s*rgba\(255,\s*255,\s*255/i.test(r.text) && !/background:\s*rgba\(248,\s*248,\s*248/i.test(r.text), r.text.slice(0, 220));
   assert('mimo layout classes present', r.text.includes('.hero-banner-shader') && r.text.includes('.particle-text-wrap') && r.text.includes('.model-card') && r.text.includes('.home-section') && r.text.includes('.page-dots'), r.text.slice(0, 220));
+  assert('reference page full css structure', r.text.includes('--card:#faf7f3') && r.text.includes('--border-warm:#f0ebe5') && r.text.includes('.ecosystem-grid') && r.text.includes('.voices-section') && r.text.includes('.site-footer'), r.text.slice(0, 220));
   assert('spring bounce motion present', r.text.includes('cubic-bezier(.34,1.56,.64,1)'), r.text.slice(0, 180));
   r = await adm('GET', '/assets/app.js');
   assert('theme switch syncs particle', r.status === 200 && r.text.includes('bootstrap.particle.setTheme'), r.text.slice(0, 180));
@@ -293,6 +295,10 @@ async function main() {
   assert('hero typing lines wired', r.text.includes('hero-line') && r.text.includes('typingLine'), r.text.slice(0, 180));
   r = await pub('GET', '/');
   assert('home markup follows reference structure', r.text.includes('hero-banner-shader') && r.text.includes('particle-text-wrap') && r.text.includes('updates-layout') && r.text.includes('product-accordion'), r.text.slice(0, 180));
+  assert('home follows full reference section order', (function(){
+    var h=r.text, order=['home-page','home-nav','hero-content','hero-banner-shader','updates-section','models-section','products-section','ecosystem-section','voices-section','about-section','site-footer'];
+    var last=-1; for(var i=0;i<order.length;i++){var k=h.indexOf(order[i]); if(k<0||k<last)return false; last=k;} return true;
+  })(), r.text.slice(0, 180));
   r = await adm('GET', '/README.md').catch(() => ({ status: 404, text: '' }));
   if (r.status === 200) assert('readme avoids reference brand name', !/MiMo|小米/i.test(r.text) && r.text.includes('极简黑白风格'), r.text.slice(0, 180));
 

@@ -1,4 +1,4 @@
-/* 粒子文字 Hero：高密度点阵文字 + 花纹装饰层；
+/* 粒子文字 Hero：高密度点阵文字 + 可见心形点阵；
    window 级指针追踪、可配置力场、自动回位、昼夜中性灰配色、合帧绘制与测试钩子
    是本轮增强，不是官网原值。 */
 window.BlogParticle = { init: function (text, subtitle, opts) { return new ParticleHero(text, subtitle, opts); } };
@@ -69,8 +69,8 @@ function ParticleHero(text, subtitle, opts) {
     return parts.slice(0, 120).map(function (p) { return { x: p.x, y: p.y, tx: p.tx, ty: p.ty }; });
   };
 
-  // 心形点阵：参数方程 + 环向抖动，替换原玫瑰线花纹；保留黑白粒子配色与所有动画钩子
-  var HEART = { count: 520, cx: 0.18, cy: 0.50, scale: 0.42, rings: 5, jitter: 0.045 };
+  // 心形点阵：参数方程 + 多层环向抖动，与文字粒子同场可见；保留黑白配色与所有动画钩子
+  var HEART = { count: 720, cx: 0.20, cy: 0.52, scale: 0.55, rings: 6, jitter: 0.055 };
   function heartX(t) { return 16 * Math.pow(Math.sin(t), 3); }
   function heartY(t) { return 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t); }
   function patternPoints() {
@@ -83,7 +83,7 @@ function ParticleHero(text, subtitle, opts) {
       var wobble = 1 + HEART.jitter * Math.sin(i * 12.9898);
       var px = W * HEART.cx + heartX(t) * shrink * wobble * W * HEART.scale / 16;
       var py = H * HEART.cy - heartY(t) * shrink * wobble * H * HEART.scale / 18;
-      if (px > 10 && px < W - 10 && py > 10 && py < H - 10) pts.push({ x: px, y: py, a: 0.4 + 0.45 * (1 - ring / HEART.rings), pattern: true });
+      if (px > 10 && px < W - 10 && py > 10 && py < H - 10) pts.push({ x: px, y: py, a: 0.62 + 0.35 * (1 - ring / HEART.rings), pattern: true });
     }
     return pts;
   }
@@ -167,7 +167,7 @@ function ParticleHero(text, subtitle, opts) {
       for (var j = 0; j < g.rects.length; j++) {
         var q = g.rects[j], s = q.size;
         if (q.pattern) {
-          // heart dots stay monochrome and share the grouped draw path
+          // 心形点与文字点共用黑白分组绘制，保证在海报上可见
           ctx.moveTo(q.x, q.y - s);
           ctx.lineTo(q.x + s, q.y);
           ctx.lineTo(q.x, q.y + s);
