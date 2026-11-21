@@ -22,7 +22,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(DIR, 'data');
 const PUBLIC_DIR = path.join(DIR, 'public');
 const store = new Store(DATA_DIR);
 const adminAccount = config.adminAccount || { username: '白小飞', password: '123456' };
-store.ensureAdminSync(adminAccount.username, adminAccount.password);
+store.syncAdminAccount(adminAccount.username, adminAccount.password);
 
 const ALLOWED_ERRORS = new Set([
   'UNAUTHORIZED', 'FORBIDDEN', 'NOT_FOUND', 'BAD_REQUEST', 'BAD_JSON',
@@ -131,7 +131,7 @@ async function serveStatic(req, res, pathname, surface) {
   let rel;
   if (pathname === '/' || pathname === '/index.html') rel = surface === 'admin' ? 'admin.html' : 'index.html';
   else if (pathname === '/admin' || pathname === '/admin/' || pathname === '/admin.html') {
-    if (surface !== 'admin') { U.text(res, 404, 'Not Found'); return; }
+    if (surface !== 'admin' && !isAdmin(currentUser(req))) { U.text(res, 404, 'Not Found'); return; }
     rel = 'admin.html';
   }
   else if (pathname.indexOf('/assets/') === 0) rel = path.join('assets', pathname.slice('/assets/'.length));
@@ -198,18 +198,23 @@ async function api(req, res, u, surface) {
   const pathname = u.pathname;
   const q = u.searchParams;
   const isPublic = surface === 'public';
-  const PUBLIC_ADMIN_WRITES = new Set(['/api/admin/posts', '/api/admin/posts/delete']);
-  if (isPublic && pathname.indexOf('/api/admin/') === 0 && !(method === 'POST' && PUBLIC_ADMIN_WRITES.has(pathname))) {
+  if (isPublic && pathname.indexOf('/api/admin/') === 0 && !isAdmin(currentUser(req))) {
+    // 隐藏后台 API：匿名读 404；写操作走 401 语义。管理员放行全部。
+    if (method === 'POST') return fail(res, 401, 'UNAUTHORIZED', '需要管理员权限');
     return fail(res, 404, 'NOT_FOUND');
   }
   if (isPublic && (pathname === '/api/login/dev' || pathname === '/api/login/mini')) {
     return fail(res, 404, 'NOT_FOUND');
   }
   // 主站只开放管理员会话下的文章发布/编辑；上传等后台功能仍在独立后台端口。
-  if (isPublic && method === 'POST' && pathname === '/api/upload') return fail(res, 404, 'NOT_FOUND');
+  if (isPublic && method === 'POST' && pathname === '/api/upload' && !isAdmin(currentUser(req))) return fail(res, 404, 'NOT_FOUND');
 
   if (pathname === '/api/health') {
     return ok(res, 200, { uptime: Math.floor(process.uptime()) });
+  }
+
+  if (pathname === '/api/version') {
+    return ok(res, 200, { revision: store.version() });
   }
 
   if (pathname === '/api/bootstrap') {
@@ -231,7 +236,7 @@ async function api(req, res, u, surface) {
       admin: isAdmin(currentUser(req)),
       urls: {
         main: config.baseUrl || 'http://127.0.0.1:' + PORT,
-        admin: 'http://' + HOST + ':' + ADMIN_PORT + '/admin',
+        admin: '/admin',
         adminPort: ADMIN_PORT,
         adminOrigin: 'http://' + HOST + ':' + ADMIN_PORT
       },
@@ -389,7 +394,7 @@ async function api(req, res, u, surface) {
   }
 
   if (pathname === '/api/upload' && method === 'POST') {
-    if (isPublic) return fail(res, 404, 'NOT_FOUND');
+    if (isPublic && !isAdmin(currentUser(req))) return fail(res, 404, 'NOT_FOUND');
     const user = requireAdmin(req, res); if (!user) return;
     const buf = await U.readBody(req, config.upload.maxBytes);
     const parts = U.parseMultipart(buf, U.boundaryFrom(req.headers['content-type']));
@@ -498,7 +503,6 @@ async function api(req, res, u, surface) {
   }
   // ---- 站点设置 / 首页编排（管理员） ----
   if (pathname === '/api/admin/settings') {
-    if (isPublic) return fail(res, 404, 'NOT_FOUND');
     if (!requireAdmin(req, res)) return;
     if (method === 'GET') return ok(res, 200, { settings: store.settings(), defaults: config.site || {} });
     if (method === 'POST') {

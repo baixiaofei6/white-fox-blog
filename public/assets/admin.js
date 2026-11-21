@@ -9,7 +9,17 @@
       return r.json().then(function (j) { if (!r.ok || !j.ok) throw new Error(j.message || j.error || ('HTTP ' + r.status)); return j; });
     });
   }
-  function json(url, body) { return api(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }); }
+  
+  // 内容变更后广播给主站，主站第一时间刷新（同源）。
+  function broadcastChange() {
+    try { localStorage.setItem('blog-content-version', String(Date.now())); } catch (e) {}
+    try {
+      var ch = new BroadcastChannel('blog-content');
+      ch.postMessage({ type: 'content-changed', at: Date.now() });
+      setTimeout(function () { ch.close(); }, 100);
+    } catch (e) {}
+  }
+function json(url, body) { return api(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }).then(function (r) { broadcastChange(); return r; }); }
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
   function val(id) { return $(id).value; }
   function set(id, v) { if ($(id)) $(id).value = v == null ? '' : String(v); }
@@ -25,11 +35,15 @@
         if (r.user.avatar) { var im = el('img'); im.src = r.user.avatar; im.alt = ''; n.appendChild(im); }
         n.appendChild(el('span', '', r.user.nickname));
       }
-      $('admin-status').textContent = r.user ? (r.admin ? '已登录：' + r.user.nickname + '（管理员）· 全部自定义功能已解锁' : '已登录：' + r.user.nickname + '（非管理员）') : '尚未登录。请用管理员账号密码登录。';
-      $('admin-username').disabled = !!r.user; $('admin-password').disabled = !!r.user; $('admin-login').disabled = !!r.user;
-      $('login-panel').hidden = !!r.admin;
-      $('work-panel').hidden = !r.admin;
-      if (r.admin) return Promise.all([loadSettings(), loadLayout(), loadContent(), refresh()]);
+      if (!r.admin) {
+        $('admin-status').textContent = '需要管理员身份：请回主站用管理员账号（白小飞 / 主站密码）登录后再进入。';
+        $('work-panel').hidden = true;
+        setTimeout(function () { location.replace('/#/login'); }, 800);
+        return;
+      }
+      $('admin-status').textContent = '已登录：' + r.user.nickname + '（管理员）· 所有改动实时同步到主站';
+      $('work-panel').hidden = false;
+      return Promise.all([loadSettings(), loadLayout(), loadContent(), refresh()]);
     }, function (e) { $('admin-status').textContent = e.message; });
   }
 
@@ -200,15 +214,6 @@
       Array.prototype.forEach.call(document.querySelectorAll('.tab-panel'), function (p) { p.hidden = p.dataset.panel !== b.dataset.tab; });
     });
     status();
-    $('admin-login').addEventListener('click', function () {
-      json('/api/login/admin', { username: val('admin-username').trim(), password: val('admin-password') }).then(function () {
-        $('login-msg').textContent = '登录成功'; say('已登录'); status();
-      }, function (e) { $('login-msg').textContent = e.message; say(e.message); });
-    });
-    $('admin-password').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('admin-login').click(); });
-    $('admin-logout').addEventListener('click', function () {
-      json('/api/logout', {}).then(function () { say('已退出'); status(); }, function (e) { say(e.message); });
-    });
     $('settings-save').addEventListener('click', saveSettings);
     $('settings-reset').addEventListener('click', function () { loadSettings().then(function () { say('已重新载入'); }); });
     $('layout-save').addEventListener('click', saveLayout);

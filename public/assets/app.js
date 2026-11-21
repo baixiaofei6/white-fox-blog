@@ -130,9 +130,7 @@
       if (reg) { reg.hidden = false; reg.textContent = '注册'; reg.href = '#/register'; }
       if (tab) tab.hidden = true;
     }
-    if (state.site && state.site.urls && state.site.urls.admin) {
-      var open = $('manage-open'); if (open) open.href = state.site.urls.admin;
-    }
+    if (state.admin) { var open = $('manage-open'); if (open) { open.hidden = false; open.href = state.urls && state.urls.admin ? state.urls.admin : '/admin'; } } else { var o2 = $('manage-open'); if (o2) o2.hidden = true; }
     var identity = $('manage-identity');
     if (identity) identity.textContent = state.user ? ('当前身份：' + state.user.nickname + (state.admin ? '（管理员）' : '（普通用户）')) : '尚未登录';
     try {
@@ -141,6 +139,31 @@
     } catch (e) {}
   }
 
+  // 后台改动后第一时间同步主站内容（同源 BroadcastChannel + storage + 版本轮询）。
+  var contentVersion = 0;
+  function refreshFromServer() {
+    return Promise.all([api('/api/bootstrap'), api('/api/posts'), api('/api/projects'), api('/api/guestbook')]).then(function (rs) {
+      var b = rs[0];
+      state.site = b.site; state.providers = b.providers; state.user = b.user; state.admin = b.admin; state.layout = b.layout; state.urls = b.urls || state.urls;
+      state.posts = rs[1].posts; state.projects = rs[2].projects; state.guestbook = rs[3].guestbook;
+      document.title = state.site.name || document.title;
+      renderNav(); applyTheme(); renderHome(); renderGuestbook(); loadManagePosts();
+      return api('/api/version').then(function (v) { contentVersion = v.revision; }).catch(function () {});
+    }).catch(function () {});
+  }
+  function bindContentSync() {
+    try {
+      var ch = new BroadcastChannel('blog-content');
+      ch.onmessage = function (e) { if (e.data && e.data.type === 'content-changed') refreshFromServer(); };
+    } catch (e) {}
+    window.addEventListener('storage', function (e) { if (e.key === 'blog-content-version') refreshFromServer(); });
+    setInterval(function () {
+      api('/api/version').then(function (v) {
+        if (contentVersion && v.revision !== contentVersion) refreshFromServer();
+      }).catch(function () {});
+    }, 3000);
+    api('/api/version').then(function (v) { contentVersion = v.revision; }).catch(function () {});
+  }
   function refreshSession() {
     return api('/api/me').then(function (r) { state.user = r.user; state.admin = !!r.admin; renderNav(); return r; });
   }
@@ -434,6 +457,7 @@
     }).then(function () { return Promise.all([api('/api/posts'), api('/api/projects')]); }).then(function (rs) {
       state.posts = rs[0].posts; state.projects = rs[1].projects;
       renderHome(); route(); renderGuestbook(); loadManagePosts();
+      bindContentSync();
       typingLine('line0', state.site.hero || '你好，我是白小飞', 120);
       typingLine('line1', state.site.sub || '写代码，做东西，记录一点想法', 700);
     });

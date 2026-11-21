@@ -19,18 +19,8 @@
 <main class="admin-wrap">
   <section class="panel glass">
     <p class="eyebrow">CONTROL CENTER</p><h1>站点控制台</h1>
-    <p class="sec-sub">独立后台站点：管理员账号「白小飞」用密码登录；只有管理员能调整网站内容、改密码与自定义背景。主站不提供后台入口。</p>
+    <p class="sec-sub">隐藏控制台：只能在主站用管理员账号（白小飞 / 主站密码）登录后进入。所有改动立即写入本站数据，主站实时同步显示。</p>
     <div id="admin-status" class="status-line"></div>
-  </section>
-
-  <section class="panel glass" id="login-panel">
-    <h2>管理员登录</h2>
-    <p class="sec-sub">这是独立的后台站点；只有管理员用账号密码登录。主站没有后台入口。</p>
-    <div class="admin-login-grid">
-      <label>账号<input id="admin-username" maxlength="40" autocomplete="username"></label>
-      <label>密码<input id="admin-password" type="password" maxlength="128" autocomplete="current-password"></label>
-    </div>
-    <div class="row mt"><button class="primary" id="admin-login" type="button">登录</button><button class="outline" id="admin-logout" type="button">退出</button><span id="login-msg" class="head-note"></span></div>
   </section>
 
   <section id="work-panel" hidden>

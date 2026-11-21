@@ -111,21 +111,23 @@ async function main() {
   assert('force field canvas overlays banner', r.text.indexOf('id="field"') > r.text.indexOf('particle-text-wrap') && r.text.indexOf('id="field"') < r.text.indexOf('<canvas id="pt"') + 300);
   assert('force field visible by default', /<input[^>]+id="showField"[^>]+checked/.test(r.text));
   r = await pub('GET', '/admin');
-  assert('public /admin 404', r.status === 404, 'status=' + r.status);
+  assert('public /admin hidden from anonymous', r.status === 404, 'status=' + r.status);
   r = await pub('GET', '/api/admin/overview');
   assert('public admin api 404', r.status === 404 && r.json.error === 'NOT_FOUND', r.text.slice(0, 160));
   r = await pub('POST', '/api/login/admin', { username: config.adminAccount.username, password });
   const publicCookie = (r.headers['set-cookie'] || []).map(x => x.split(';')[0]).join('; ');
   const publicAuth = { Cookie: publicCookie, Authorization: 'Bearer ' + (r.json.sessionId || '') };
   assert('public admin login 200 + session', r.status === 200 && r.json.user.nickname === config.adminAccount.username && !!r.json.sessionId && /sid=/.test(publicCookie), r.text.slice(0, 220));
+  r = await pub('GET', '/admin', null, { Cookie: publicCookie });
+  assert('unified hidden admin page opens for admin session on main origin', r.status === 200 && /id="work-panel"/.test(r.text) && !/id="admin-login"/.test(r.text), r.text.slice(0, 200));
   r = await pub('GET', '/api/me', null, publicAuth);
   assert('public login identifies admin', r.status === 200 && r.json.admin === true, r.text.slice(0, 180));
   r = await pub('GET', '/api/bootstrap', null, publicAuth);
   assert('public bootstrap reflects admin session', r.status === 200 && r.json.admin === true && r.json.user.nickname === config.adminAccount.username, r.text.slice(0, 220));
   r = await pub('GET', '/api/admin/overview', null, publicAuth);
-  assert('public read-only admin API still blocked', r.status === 404 && r.json.error === 'NOT_FOUND', r.text.slice(0, 160));
+  assert('public admin session unlocks admin API (unified surface)', r.status === 200 && r.json.counts !== undefined, r.text.slice(0, 160));
   r = await pub('GET', '/api/admin/content', null, publicAuth);
-  assert('public admin content still blocked', r.status === 404 && r.json.error === 'NOT_FOUND', r.text.slice(0, 160));
+  assert('public admin session unlocks content API (unified surface)', r.status === 200 && !!r.json.posts, r.text.slice(0, 160));
   r = await pub('POST', '/api/admin/posts', { title: '主站管理员发布测试', slug: 'public-admin-publish', body: '<p>正文</p>' }, publicAuth);
   assert('public surface admin can publish article', r.status === 201 && r.json.post.slug === 'public-admin-publish', r.text.slice(0, 220));
   r = await pub('POST', '/api/admin/posts', { title: '主站管理员更新测试', slug: 'public-admin-publish', body: '<p>已更新</p>' }, publicAuth);
@@ -299,9 +301,9 @@ async function main() {
 
   // ---- 后台独立站点静态页 ----
   r = await adm('GET', '/');
-  assert('admin root serves admin.html', r.status === 200 && /管理员登录/.test(r.text), r.text.slice(0, 160));
+  assert('admin root serves hidden work panel', r.status === 200 && /id="work-panel"/.test(r.text) && !/id="login-panel"/.test(r.text), r.text.slice(0, 160));
   r = await adm('GET', '/assets/admin.js');
-  assert('admin js served', r.status === 200 && r.text.includes('/api/login/admin'));
+  assert('admin js served', r.status === 200 && r.text.includes('broadcastChange') && !r.text.includes('/api/login/admin'));
   // ---- 暗色粒子发光资源与主题接口（静态资源可达） ----
   r = await adm('GET', '/assets/particle.js');
   assert('particle script served', r.status === 200 && r.text.includes("ink: '#fafafa'") && r.text.includes('this.setTheme'), r.text.slice(0, 180));
@@ -377,7 +379,7 @@ async function main() {
   assert('heart pattern stays centered and prominent', r.status === 200 && /HEART\s*=\s*\{[^}]*cx:\s*0\.5/.test(r.text) && /scale:\s*0\.7/.test(r.text), (r.text.match(/var HEART[^;]*/)||[''])[0]);
 
   // ---- 内容管理界面重排版（用户 m00910） ----
-  r = await adm('GET', '/admin');
+  r = await adm('GET', '/admin', null, auth);
   assert('admin post panel has roomy editor structure', r.status === 200 && /id="post-body"/.test(r.text) && /editor-body-label/.test(r.text) && /id="post-zen"/.test(r.text), r.text.slice(0, 220));
   r = await pub('GET', '/');
   assert('public manage view has structured editor shell', r.status === 200 && /id="editor-shell"/.test(r.text) && /id="edit-zen"/.test(r.text) && /grow-label editor-body-label/.test(r.text), (r.text.match(/<section id="manage-view"[\s\S]{0,360}/)||[''])[0]);
@@ -388,7 +390,7 @@ async function main() {
   // ---- 写作台组件精细化（用户 m01027，学习 Typora / StackEdit / editor.md） ----
   r = await pub('GET', '/assets/app.js');
   assert('public editor delegates to shared writing studio', r.status === 200 && /EditorStudio[.]bindEditorEnhancements/.test(r.text) && /EDITOR_DRAFT_KEY/.test(r.text) && /__editStudio/.test(r.text), (r.text.match(/var editStudio[\s\S]{0,120}/)||[''])[0].slice(0,120));
-  r = await adm('GET', '/admin');
+  r = await adm('GET', '/admin', null, auth);
   r = await pub('GET', '/assets/admin.js');
   assert('admin editor delegates to shared writing studio', r.status === 200 && /EditorStudio[.]bindEditorEnhancements/.test(r.text) && /__adminStudio/.test(r.text), (r.text.match(/var adminStudio[\s\S]{0,120}/)||[''])[0].slice(0,120));
   r = await pub('GET', '/assets/editor-studio.js');
@@ -398,8 +400,22 @@ async function main() {
   assert('editor preview panel and status strip are styled', r.status === 200 && /[.]editor-preview[^{]*\{[^}]*\}/.test(r.text) && /[.]editor-status\{[^}]*\}/.test(r.text) && /[.]editor-shell [.]editor-actions/.test(r.text), (r.text.match(/[.]editor-preview[^}]*\}/)||[''])[0].slice(0,180));
   r = await pub('GET', '/');
   assert('public editor exposes preview and status surface', r.status === 200 && /id="edit-preview"/.test(r.text) && /id="edit-status"/.test(r.text) && /id="edit-draft-clear"/.test(r.text) && /id="edit-preview-toggle"/.test(r.text), (r.text.match(/id="edit-status"[^>]*/)||[''])[0]);
-  r = await adm('GET', '/admin');
+  r = await adm('GET', '/admin', null, auth);
   assert('admin editor exposes preview and status surface', r.status === 200 && /id="post-preview"/.test(r.text) && /id="post-status"/.test(r.text) && /id="post-draft-clear"/.test(r.text) && /id="post-preview-toggle"/.test(r.text), (r.text.match(/id="post-status"[^>]*/)||[''])[0]);
+  // ---- 后台并入主站：单入口、单密码、内容实时联通（用户 m01695） ----
+  r = await pub('GET', '/assets/admin.js');
+  assert('admin page drops the separate password login', r.status === 200 && !r.text.includes('/api/login/admin') && !r.text.includes('admin-login') && /location\.replace\((['"])\/#\/login/.test(r.text), r.text.slice(0, 180));
+  assert('admin page broadcasts content changes to main site', r.status === 200 && /BroadcastChannel/.test(r.text) && /blog-content/.test(r.text) && /blog-content-version/.test(r.text), (r.text.match(/BroadcastChannel[^;]{0,160}/)||[''])[0]);
+  r = await pub('GET', '/assets/app.js');
+  assert('main site listens and refreshes when admin changes content', r.status === 200 && /function refreshFromServer/.test(r.text) && /blog-content-version/.test(r.text) && /BroadcastChannel/.test(r.text) && /api\/version/.test(r.text), (r.text.match(/function refreshFromServer[\s\S]{0,180}/)||[''])[0].slice(0,160));
+  r = await pub('GET', '/api/version');
+  assert('content version endpoint exists for live sync', r.status === 200 && typeof r.json.revision === 'number', r.text.slice(0, 160));
+  r = await pub('GET', '/api/bootstrap', null, publicAuth);
+  assert('admin url points to same-origin hidden page', r.status === 200 && r.json.urls && r.json.urls.admin === '/admin', JSON.stringify(r.json.urls||{}).slice(0,200));
+  r = await pub('GET', '/lib/store.js').catch(()=>({status:404}));
+  const storeSrc = await fs.readFile(path.join(ROOT,'lib/store.js'),'utf8');
+  assert('admin password is synced from config at startup (single password)', /syncAdminAccount/.test(storeSrc) && /store[.]syncAdminAccount/.test(await fs.readFile(path.join(ROOT,'server.js'),'utf8')), 'store/server syncAdminAccount');
+
   r = await adm('GET', '/api/does-not-exist');
   assert('unknown API 404 JSON', r.status === 404 && r.json.error === 'NOT_FOUND');
   r = await adm('POST', '/api/logout', {}, auth);
