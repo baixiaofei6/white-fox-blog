@@ -108,6 +108,7 @@ async function main() {
   assert('public index has login entry and admin tab', r.text.includes('id="login-entry"') && r.text.includes('id="admin-tab"') && r.text.includes('id="login-view"'));
   assert('hero has welcome portrait image', r.text.includes('id="hero-portrait"') && /src="\/assets\/hello-baixiaofei\.svg"/.test(r.text));
   assert('force field canvas overlays banner', r.text.indexOf('id="field"') > r.text.indexOf('particle-text-wrap') && r.text.indexOf('id="field"') < r.text.indexOf('<canvas id="pt"') + 300);
+  assert('force field visible by default', /<input[^>]+id="showField"[^>]+checked/.test(r.text));
   r = await pub('GET', '/admin');
   assert('public /admin 404', r.status === 404, 'status=' + r.status);
   r = await pub('GET', '/api/admin/overview');
@@ -141,8 +142,12 @@ async function main() {
   r = await pub('GET', '/assets/app.js');
   assert('front end login and admin tab flow', r.status === 200 && r.text.includes("'/api/login/admin'") && r.text.includes('admin-tab') && r.text.includes('login-entry') && r.text.includes('state.admin') && r.text.includes("json('/api/admin/posts'"), r.text.slice(0, 180));
   assert('front end keeps force field on hero', r.status === 200 && r.text.includes('window.BlogParticle.init') && r.text.includes('__particleProbe') && r.text.includes('forceProbe'), r.text.slice(0, 180));
+  assert('front end never requests missing update-0 image', r.status === 200 && !r.text.includes("'/assets/update-' + i + '.png'") && !r.text.includes("'/assets/update-0.png'"), r.text.slice(0, 180));
+  assert('front end hides broken images instead of broken icon', r.status === 200 && r.text.includes('function bindImageFallback') && r.text.includes("addEventListener('error'"), r.text.slice(0, 180));
+  assert('global broken image suppression covers article HTML', r.status === 200 && r.text.includes('bindGlobalImageErrors') && r.text.includes('tagName !== \'IMG\''), r.text.slice(0, 180));
   r = await pub('GET', '/assets/particle.js');
   assert('particle canvas matches visible banner stage', r.status === 200 && r.text.includes("document.querySelector('.hero-banner-shader')") && r.text.includes('var r = stage.getBoundingClientRect()'), r.text.slice(0, 180));
+  assert('particle initializes visible force canvas', r.status === 200 && r.text.includes('var showFieldEl = document.getElementById(\'showField\')') && r.text.includes('onField();'), r.text.slice(0, 180));
   r = await pub('GET', '/assets/../server.js');
   assert('path traversal rejected', r.status === 403 || r.status === 404, 'status=' + r.status);
 

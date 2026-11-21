@@ -71,7 +71,7 @@ function ParticleHero(text, subtitle, opts) {
   };
 
   // 心形点阵：参数方程 + 多层环向抖动，与文字粒子同场可见；保留黑白配色与所有动画钩子
-  var HEART = { count: 720, cx: 0.20, cy: 0.52, scale: 0.55, rings: 6, jitter: 0.055 };
+  var HEART = { count: 900, cx: 0.50, cy: 0.52, scale: 0.72, rings: 6, jitter: 0.035 };
   function heartX(t) { return 16 * Math.pow(Math.sin(t), 3); }
   function heartY(t) { return 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t); }
   function patternPoints() {
@@ -239,7 +239,13 @@ function ParticleHero(text, subtitle, opts) {
         fieldCtx.beginPath(); fieldCtx.arc(ptr.sx, ptr.sy, RADIUS * 1.35, 0, 2 * Math.PI);
         fieldCtx.strokeStyle = 'rgba(31,35,41,.12)'; fieldCtx.lineWidth = 14; fieldCtx.stroke();
       }
-    } else fieldCtx.clearRect(0, 0, W, H);
+    } else {
+      fieldCtx.clearRect(0, 0, W, H);
+      if (document.getElementById('showField').checked) {
+        fieldCtx.beginPath(); fieldCtx.arc(ptr.sx, ptr.sy, RADIUS, 0, 2 * Math.PI);
+        fieldCtx.strokeStyle = 'rgba(120,120,120,.35)'; fieldCtx.lineWidth = 1.5; fieldCtx.stroke();
+      }
+    }
     var settled = maxDisp() <= (reduced ? .4 : 1.2);
     var keepGoing = !reduced || pushing || entering || !settled;
     if (keepGoing) animTimer = setTimeout(tick, pushing ? 16 : TICK_MS);
@@ -279,7 +285,8 @@ function ParticleHero(text, subtitle, opts) {
   window.addEventListener('pointerout', onWindowOut);
   window.addEventListener('pointerup', onUp);
   window.addEventListener('pointercancel', onCancel);
-  document.getElementById('showField').addEventListener('change', onField);
+  var showFieldEl = document.getElementById('showField');
+  showFieldEl.addEventListener('change', onField);
 
   var subEl = document.getElementById('typing'), subText = subtitle || '写代码，做东西，记录一点想法';
   if (reduced) subEl.textContent = subText;
@@ -292,6 +299,7 @@ function ParticleHero(text, subtitle, opts) {
     })();
   }
   (document.fonts ? document.fonts.ready : Promise.resolve()).then(function () { if (!dead) resize(); });
+  onField();
   function onResize() { if (dead) return; clearTimeout(rt); rt = setTimeout(resize, 180); }
   window.addEventListener('resize', onResize);
   this.setTheme = function () { if (dead) return; refreshPalette(); drawStatic(); ensureAnim(TICK_MS); };

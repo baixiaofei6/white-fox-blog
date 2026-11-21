@@ -27,6 +27,34 @@
   }
   function json(url, method, body) { return api(url, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }); }
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
+  var __blogImageErrorBound = false;
+  function bindGlobalImageErrors() {
+    if (__blogImageErrorBound) return;
+    __blogImageErrorBound = true;
+    document.addEventListener('error', function (e) {
+      var t = e.target;
+      if (!t || t.tagName !== 'IMG') return;
+      if (t.dataset.fallback === 'text' && !t.dataset.fallbackDone) {
+        t.dataset.fallbackDone = '1';
+        var wrap = t.parentNode;
+        if (wrap && !wrap.querySelector('.image-fallback-text')) {
+          var label = el('span', 'image-fallback-text', t.dataset.fallbackText || t.alt || '图片暂不可用');
+          wrap.appendChild(label);
+        }
+      }
+      t.style.display = 'none';
+    }, true);
+  }
+  function bindImageFallback(img) {
+    if (!img) return;
+    img.addEventListener('error', function () {
+      if (img.dataset.fallback === 'text') {
+        var t = el('span', 'image-fallback-text', img.dataset.fallbackText || img.alt || '图片暂不可用');
+        if (img.parentNode && !img.parentNode.querySelector('.image-fallback-text')) img.parentNode.appendChild(t);
+      }
+      img.style.display = 'none';
+    });
+  }
   function href(slug) { return '#/notes/' + encodeURIComponent(slug); }
 
   // ---- 白天 / 黑夜 / 自动跟随 ----
@@ -226,7 +254,7 @@
     }
     posts.slice(1, 4).forEach(function (p, i) {
       var a = el('a', 'mini'); a.href = href(p.slug);
-      var card = el('div', 'card-image'); var im = el('img'); im.src = '/assets/update-' + i + '.png'; im.alt = p.title; card.appendChild(im); a.appendChild(card);
+      var card = el('div', 'card-image'); var im = el('img'); im.src = '/assets/update-' + (i + 1) + '.png'; im.alt = p.title; card.appendChild(im); a.appendChild(card);
       var box = el('div', 'card-info'); box.appendChild(el('h3', '', p.title)); box.appendChild(el('p', '', p.excerpt || '')); a.appendChild(box);
       $('updates-side').appendChild(a);
     });
@@ -425,6 +453,7 @@
     var ring = $('ring');
     if (!reduced) window.addEventListener('pointermove', function (e) { ring.style.left = e.clientX + 'px'; ring.style.top = e.clientY + 'px'; });
     else ring.style.display = 'none';
+    bindGlobalImageErrors();
     bootstrap().catch(function (e) { say('初始化失败：' + e.message); });
   });
 })();
