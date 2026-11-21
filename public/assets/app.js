@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var state = { site: {}, providers: {}, user: null, admin: false, posts: [], projects: [], layout: null, guestbook: [], userMode: null, carouselIndex: 0, typingTimers: [] };
+  var state = { site: {}, providers: {}, user: null, admin: false, posts: [], projects: [], layout: null, guestbook: [], userMode: null, carouselIndex: 0, typingTimers: [], editing: null };
   var $ = function (id) { return document.getElementById(id); };
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -12,6 +12,16 @@
   }
   function api(url, opts) {
     return fetch(url, Object.assign({ credentials: 'same-origin' }, opts || {})).then(function (r) {
+      return r.json().then(function (j) { if (!r.ok || !j.ok) throw new Error(j.message || j.error || ('HTTP ' + r.status)); return j; });
+    });
+  }
+  function adminApi(url, opts) {
+    var configured = state.urls && state.urls.adminOrigin;
+    var origin = configured || (state.urls && state.urls.admin) ||
+      (location.protocol + '//' + location.hostname + ':8788');
+    if (origin.charAt(origin.length - 1) === '/') origin = origin.slice(0, -1);
+    if (origin.indexOf('/admin') >= 0) origin = origin.slice(0, origin.indexOf('/admin'));
+    return fetch(origin + url, Object.assign({ credentials: 'include' }, opts || {})).then(function (r) {
       return r.json().then(function (j) { if (!r.ok || !j.ok) throw new Error(j.message || j.error || ('HTTP ' + r.status)); return j; });
     });
   }
@@ -78,10 +88,82 @@
 
   function renderNav() {
     var n = $('nav-user'); n.textContent = ''; n.hidden = true;
+    var login = $('login-entry'), tab = $('admin-tab');
+    if (state.user) {
+      n.textContent = state.user.nickname + (state.admin ? ' · 管理员' : '');
+      n.hidden = false;
+      if (login) { login.textContent = '退出登录'; login.href = '#/logout'; }
+      if (tab) tab.hidden = !state.admin;
+    } else {
+      if (login) { login.textContent = '登录'; login.href = '#/login'; }
+      if (tab) tab.hidden = true;
+    }
+    if (state.site && state.site.urls && state.site.urls.admin) {
+      var open = $('manage-open'); if (open) open.href = state.site.urls.admin;
+    }
+    var identity = $('manage-identity');
+    if (identity) identity.textContent = state.user ? ('当前身份：' + state.user.nickname + (state.admin ? '（管理员）' : '（普通用户）')) : '尚未登录';
     try {
       var m = localStorage.getItem('blog-theme-mode');
       state.userMode = ['light', 'dark', 'auto'].indexOf(m) >= 0 ? m : null;
     } catch (e) {}
+  }
+
+  function refreshSession() {
+    return api('/api/me').then(function (r) { state.user = r.user; state.admin = !!r.admin; renderNav(); return r; });
+  }
+
+  function submitLogin() {
+    var u = $('login-username').value.trim(), p = $('login-password').value;
+    if (!u || !p) { $('login-message').textContent = '请填写账号和密码'; return; }
+    json('/api/login/admin', { username: u, password: p }).then(function () {
+      $('login-username').value = ''; $('login-password').value = '';
+      refreshSession().then(function () {
+        $('login-message').textContent = '登录成功' + (state.admin ? '，已识别为管理员' : '');
+        route(); say(state.admin ? '管理员已登录，出现「管理」选项卡' : '已登录');
+      });
+    }, function (e) { $('login-message').textContent = e.message; say(e.message); });
+  }
+
+  function logout() {
+    json('/api/logout', {}).then(function () { state.user = null; state.admin = false; renderNav(); route(); say('已退出登录'); }, function (e) { say(e.message); });
+  }
+
+  function clearEditor() {
+    state.editing = null;
+    ['edit-title','edit-slug','edit-date','edit-tags','edit-excerpt','edit-body'].forEach(function (id) { $(id).value = ''; });
+    $('edit-message').textContent = '';
+  }
+
+  function loadManagePosts() {
+    var box = $('manage-posts'); if (!box) return;
+    box.textContent = '';
+    (state.posts || []).forEach(function (p) {
+      var row = el('div', 'manage-row');
+      var g = el('div', 'grow'); g.appendChild(el('b', '', p.title)); g.appendChild(el('small', '', (p.date || '') + ' · ' + p.slug)); row.appendChild(g);
+      var edit = el('button', '', '编辑'); edit.type = 'button';
+      edit.addEventListener('click', function () {
+        state.editing = p.slug;
+        $('edit-title').value = p.title || ''; $('edit-slug').value = p.slug || ''; $('edit-date').value = p.date || '';
+        $('edit-tags').value = (p.tags || []).join(','); $('edit-excerpt').value = p.excerpt || '';
+        $('edit-message').textContent = '已载入「' + p.title + '」，修改后点发布 / 更新文章';
+        api('/api/posts/' + encodeURIComponent(p.slug)).then(function (r) { $('edit-body').value = r.post.body || ''; });
+      });
+      row.appendChild(edit); box.appendChild(row);
+    });
+  }
+
+  function savePost() {
+    var title = $('edit-title').value.trim();
+    if (!title) { $('edit-message').textContent = '请填写标题'; return; }
+    var tags = $('edit-tags').value.split(/[,，]/).map(function (x) { return x.trim(); }).filter(Boolean);
+    var payload = { title: title, slug: $('edit-slug').value.trim(), date: $('edit-date').value,
+      tags: tags, excerpt: $('edit-excerpt').value, body: $('edit-body').value };
+    json('/api/admin/posts', payload).then(function (r) {
+      $('edit-message').textContent = '已保存：' + r.post.slug;
+      state.editing = r.post.slug; $('edit-slug').value = r.post.slug;
+      return api('/api/posts').then(function (res) { state.posts = res.posts; renderHome(); loadManagePosts(); });
+    }, function (e) { $('edit-message').textContent = e.message; say(e.message); });
   }
 
   // ---- 首页内容 ----
@@ -251,21 +333,32 @@
 
   // ---- 路由与粒子 ----
   var particleStopped = false;
+  function forceProbe() { return window.__particleProbe ? window.__particleProbe() : null; }
+  window.__blogApp = { state: state, submitLogin: submitLogin, savePost: savePost, route: route, refreshSession: refreshSession, forceProbe: forceProbe };
   function suspendParticle() { if (bootstrap.particle && !particleStopped) { bootstrap.particle.destroy(); particleStopped = true; } }
   function resumeParticle() {
     if (particleStopped && window.BlogParticle) {
       bootstrap.particle = window.BlogParticle.init(state.site.hero || '你好，我是白小飞', state.site.sub || '写代码，做东西，记录一点想法', state.site.heroFx || {});
       particleStopped = false;
+      forceProbe();
     }
   }
   function route() {
     var h = location.hash || '#/', v = 'home-view';
-    if (h.indexOf('#/notes/') === 0) { v = 'post-view'; showPost(decodeURIComponent(h.slice('#/notes/'.length))); }
+    if (h === '#/login') {
+      v = 'login-view';
+      if (state.admin) { location.hash = '#/admin/manage'; return; }
+    } else if (h === '#/logout') { logout(); return; }
+    else if (h === '#/admin/manage') {
+      if (!state.admin) { v = 'login-view'; $('login-message').textContent = '请先以管理员身份登录'; }
+      else { v = 'manage-view'; loadManagePosts(); }
+    }
+    else if (h.indexOf('#/notes/') === 0) { v = 'post-view'; showPost(decodeURIComponent(h.slice('#/notes/'.length))); }
     else if (h === '#/notes') v = 'notes-view';
     else if (h === '#/projects') v = 'projects-view';
     else if (h === '#/guestbook') v = 'guestbook-view';
     else if (h === '#/about') v = 'about-view';
-    ['home-view', 'notes-view', 'post-view', 'projects-view', 'about-view', 'guestbook-view'].forEach(function (id) { $(id).hidden = id !== v; });
+    ['home-view', 'notes-view', 'post-view', 'projects-view', 'about-view', 'guestbook-view', 'login-view', 'manage-view'].forEach(function (id) { if ($(id)) $(id).hidden = id !== v; });
     var portal = v === 'home-view';
     ['hero', 'signal-strip'].forEach(function (id) {
       var n = $(id); if (n) n.style.display = (portal && visible(id === 'hero' ? 'hero' : 'notice')) ? '' : 'none';
@@ -282,7 +375,7 @@
 
   function bootstrap() {
     return api('/api/bootstrap').then(function (r) {
-      state.site = r.site; state.providers = r.providers; state.user = r.user; state.admin = r.admin; state.layout = r.layout;
+      state.site = r.site; state.providers = r.providers; state.user = r.user; state.admin = r.admin; state.layout = r.layout; state.urls = r.urls || {};
       document.title = r.site.name || '白小飞的个人博客';
       $('notice').textContent = r.site.announcement || r.site.tagline || '白小飞的个人博客';
       $('footer-text').textContent = r.site.footer || '';
@@ -293,7 +386,7 @@
       }
     }).then(function () { return Promise.all([api('/api/posts'), api('/api/projects')]); }).then(function (rs) {
       state.posts = rs[0].posts; state.projects = rs[1].projects;
-      renderHome(); route(); renderGuestbook();
+      renderHome(); route(); renderGuestbook(); loadManagePosts();
       typingLine('line0', state.site.hero || '你好，我是白小飞', 120);
       typingLine('line1', state.site.sub || '写代码，做东西，记录一点想法', 700);
     });
@@ -304,6 +397,9 @@
     $('cta1').addEventListener('click', function () { location.hash = '#/notes'; });
     $('cta2').addEventListener('click', function () { location.hash = '#/projects'; });
     $('cta-version').addEventListener('click', function () { location.hash = '#/notes'; });
+    $('login-submit').addEventListener('click', submitLogin);
+    $('login-logout').addEventListener('click', logout);
+    $('edit-save').addEventListener('click', savePost);
     $('theme-switch').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-mode]'); if (b) setMode(b.dataset.mode);
     });

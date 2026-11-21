@@ -55,7 +55,8 @@ button{cursor:pointer}
 .hero-banner-shader .poster{width:100%;height:100%;object-fit:cover;display:block}
 .particle-text-wrap{position:absolute;inset:0;z-index:4;overflow:hidden}
 #pt{position:absolute;inset:0;width:100%;height:100%;display:block}
-#field{position:fixed;inset:0;z-index:3;pointer-events:none;width:100%;height:100%}
+.hero-portrait{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;opacity:.42;mix-blend-mode:multiply}
+#field{position:absolute;inset:0;z-index:5;pointer-events:none;width:100%;height:100%;display:none}
 .hero-version{position:absolute;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);border:1px solid rgba(0,0,0,.12);background:var(--glass);backdrop-filter:blur(8px);border-radius:999px;padding:8px 18px;font-size:13px;color:#000}
 .hero-version:hover{background:var(--white)}
 .hero-fallback{display:none}
@@ -194,6 +195,7 @@ body[data-theme="dark"] .hero-button.outline{color:#fff;border-color:#fff}
 body[data-theme="dark"] .hero-button.ghost{background:#1a1a1a;border-color:#333;color:#fff}
 body[data-theme="dark"] .hero-banner-shader{background:linear-gradient(130deg,#101010,#1a1a1a,#252525)}
 body[data-theme="dark"] .hero-banner-shader .poster{opacity:.58}
+body[data-theme="dark"] .hero-portrait{opacity:.32;mix-blend-mode:screen}
 body[data-theme="dark"] #pt{filter:none}
 body[data-theme="dark"] .hero-line .typing::after{background:var(--white)}
 body[data-theme="dark"] .hero-version{background:rgba(0,0,0,.6);color:#fff;border-color:#444}

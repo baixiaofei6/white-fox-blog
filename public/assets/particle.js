@@ -36,6 +36,7 @@ function ParticleHero(text, subtitle, opts) {
 
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var hero = document.getElementById('hero');
+  var stage = document.querySelector('.hero-banner-shader') || hero;
   var cvs = document.getElementById('pt'), ctx = cvs.getContext('2d');
   var fieldCvs = document.getElementById('field'), fieldCtx = fieldCvs.getContext('2d');
   var W = 0, H = 0, DPR = 1, parts = [], animTimer = null, start = 0, entering = false;
@@ -126,7 +127,7 @@ function ParticleHero(text, subtitle, opts) {
 
   function resize() {
     if (dead) return;
-    var r = hero.getBoundingClientRect();
+    var r = stage.getBoundingClientRect();
     W = Math.floor(r.width); H = Math.floor(r.height);
     DPR = Math.min(window.devicePixelRatio || 1, 2);
     [cvs, fieldCvs].forEach(function (c) {
@@ -249,13 +250,13 @@ function ParticleHero(text, subtitle, opts) {
   }
 
   function setXY(e) {
-    var r = hero.getBoundingClientRect(), nx = e.clientX - r.left, ny = e.clientY - r.top;
+    var r = stage.getBoundingClientRect(), nx = e.clientX - r.left, ny = e.clientY - r.top;
     if (!ptr.has) { ptr.px = nx; ptr.py = ny; ptr.sx = nx; ptr.sy = ny; ptr.has = true; }
     ptr.vx = nx - ptr.px; ptr.vy = ny - ptr.py;
     ptr.px = nx; ptr.py = ny; ptr.x = nx; ptr.y = ny;
   }
   function inHero(e) {
-    var r = hero.getBoundingClientRect();
+    var r = stage.getBoundingClientRect();
     return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
   }
   function onMove(e) {

@@ -198,13 +198,15 @@ async function api(req, res, u, surface) {
   const pathname = u.pathname;
   const q = u.searchParams;
   const isPublic = surface === 'public';
-  if (isPublic && (pathname.indexOf('/api/admin/') === 0 || pathname === '/api/login/admin' || pathname === '/api/login/dev' || pathname === '/api/login/mini')) {
+  const PUBLIC_ADMIN_WRITES = new Set(['/api/admin/posts', '/api/admin/posts/delete']);
+  if (isPublic && pathname.indexOf('/api/admin/') === 0 && !(method === 'POST' && PUBLIC_ADMIN_WRITES.has(pathname))) {
     return fail(res, 404, 'NOT_FOUND');
   }
-  // 只有管理员能调整网站内容：主站写内容类接口一律关闭
-  if (isPublic && method === 'POST' && ['/api/comments','/api/guestbook','/api/upload'].indexOf(pathname) >= 0) {
-    if (pathname === '/api/upload') return fail(res, 404, 'NOT_FOUND');
+  if (isPublic && (pathname === '/api/login/dev' || pathname === '/api/login/mini')) {
+    return fail(res, 404, 'NOT_FOUND');
   }
+  // 主站只开放管理员会话下的文章发布/编辑；上传等后台功能仍在独立后台端口。
+  if (isPublic && method === 'POST' && pathname === '/api/upload') return fail(res, 404, 'NOT_FOUND');
 
   if (pathname === '/api/health') {
     return ok(res, 200, { uptime: Math.floor(process.uptime()) });
@@ -226,8 +228,13 @@ async function api(req, res, u, surface) {
       layout: store.layout() || Store.DEFAULT_LAYOUT,
       providers: A.providersStatus(config),
       user: publicUser(currentUser(req)),
-      admin: isPublic ? false : isAdmin(currentUser(req)),
-      urls: { main: config.baseUrl || 'http://127.0.0.1:' + PORT },
+      admin: isAdmin(currentUser(req)),
+      urls: {
+        main: config.baseUrl || 'http://127.0.0.1:' + PORT,
+        admin: 'http://' + HOST + ':' + ADMIN_PORT + '/admin',
+        adminPort: ADMIN_PORT,
+        adminOrigin: 'http://' + HOST + ':' + ADMIN_PORT
+      },
       api: 1
     });
   }
@@ -265,7 +272,6 @@ async function api(req, res, u, surface) {
   }
 
   if (pathname === '/api/login/admin' && method === 'POST') {
-    if (isPublic) return fail(res, 404, 'NOT_FOUND');
     const b = await U.readJson(req, config.upload.maxBytes);
     const user = store.checkAdminPassword(String(b.username || ''), String(b.password || ''));
     if (!user) return fail(res, 401, 'UNAUTHORIZED', '账号或密码错误');

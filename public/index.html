@@ -23,6 +23,8 @@
       <a href="#/projects">项目</a>
       <a href="#/guestbook">留言板</a>
       <a href="#/about">关于</a>
+      <a href="#/login" id="login-entry">登录</a>
+      <a href="#/admin/manage" id="admin-tab" hidden>管理</a>
     </div>
     <span class="theme-switch" id="theme-switch" role="group" aria-label="显示模式">
       <button type="button" data-mode="light">☀ 白天</button>
@@ -50,7 +52,8 @@
       <div class="hero-banner" style="border-radius:24px">
         <div class="hero-banner-shader">
           <img class="poster" src="/assets/hero-banner.jpg" alt="">
-          <div class="particle-text-wrap"><canvas id="pt" aria-hidden="true"></canvas></div>
+          <img class="hero-portrait" id="hero-portrait" src="/assets/hello-baixiaofei.svg" alt="你好，这里是白小飞">
+          <div class="particle-text-wrap"><canvas id="pt" aria-hidden="true"></canvas><canvas id="field" aria-hidden="true"></canvas></div>
         </div>
       </div>
       <button class="hero-version" id="cta-version" type="button">了解文章</button>
@@ -61,7 +64,6 @@
       <span>移动指针，心形点阵会随之散开</span>
       <label><input type="checkbox" id="showField"> 显示力场</label>
     </div>
-    <canvas id="field" aria-hidden="true"></canvas>
   </div>
 
   <div class="signal-strip" id="signal-strip"><span class="pulse-dot"></span><span id="signal-text">站点运行中</span><span class="strip-meta" id="signal-meta"></span></div>
@@ -148,6 +150,28 @@
       <h2>关于内容管理</h2>
       <p class="warn">站点内容只由管理员在独立后台维护；主站不开放上传或内容编辑。想留言请到「留言板」，所有留言对所有人可见。</p>
       <a class="more" href="#/guestbook">去留言板 →</a>
+    </div>
+  </section>
+  <section id="login-view" class="reveal" hidden>
+    <div class="section-head"><div><p class="eyebrow">ACCOUNT / 登录</p><h2>管理员登录</h2></div></div>
+    <div class="panel glass login-panel">
+      <p class="warn">登录后识别到管理员身份，导航会出现「管理」选项卡，可以进入管理页面发布和修改文章。</p>
+      <div class="admin-login-grid">
+        <label>账号<input id="login-username" maxlength="40" autocomplete="username" placeholder="管理员账号"></label>
+        <label>密码<input id="login-password" type="password" maxlength="128" autocomplete="current-password" placeholder="密码"></label>
+      </div>
+      <div class="row mt"><button class="primary" id="login-submit" type="button">登录</button><button class="outline" id="login-logout" type="button">退出登录</button><span id="login-message" class="head-note"></span></div>
+    </div>
+  </section>
+
+  <section id="manage-view" class="reveal" hidden>
+    <div class="section-head"><div><p class="eyebrow">ADMIN / 内容管理</p><h2>文章管理</h2></div><a class="more" href="#/admin/manage">管理页面</a></div>
+    <div class="panel glass">
+      <div class="manage-intro"><span id="manage-identity"></span><a class="more" id="manage-open" href="http://127.0.0.1:8788/admin" target="_blank" rel="noopener">打开独立管理页面 →</a></div>
+      <div class="manage-grid">
+        <div><h3>发布新文章</h3><label>标题<input id="edit-title" maxlength="120"></label><label>别名 slug<input id="edit-slug" maxlength="120" placeholder="留空自动生成"></label><label>日期<input id="edit-date" type="date"></label><label>标签<input id="edit-tags" maxlength="160" placeholder="逗号分隔"></label><label>摘要<input id="edit-excerpt" maxlength="300"></label><label class="grow-label">正文<textarea id="edit-body" rows="8"></textarea></label><button class="primary" id="edit-save" type="button">发布 / 更新文章</button><span id="edit-message" class="head-note"></span></div>
+        <div><h3>已有文章</h3><div id="manage-posts" class="manage-posts"></div></div>
+      </div>
     </div>
   </section>
 </main>
